@@ -268,7 +268,8 @@ id displayed, for instance, by:
 ```
 $ ps H -C threads -o 'pid tid cmd comm'
 ```
-See [threads.c](demo/threads.c)
+Examples that use threads and message formats that display the thread id are
+[threads.c](demo/threads.c) and [beehive.c](demo/beehive.c).
 
 
 ### Demo that displays all pre-configured outputs and a custom format <a name="custom-formats"/>
