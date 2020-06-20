@@ -63,6 +63,7 @@ $ sudo apt install libsystemd-dev
 This is an Autotools package. For installation into /usr/local/lib,
 installation is very easy.
 
+	$ autoreconf -i
     $ ./configure
 	$ make
 	$ sudo make install
