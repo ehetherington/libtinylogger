@@ -84,6 +84,7 @@ MBytes/sec     | 6.2       | 5.8
 
 
 #### Results - line buffering (line feed causes write to file)
+
  param         | XW6600 | Raspberry Pi 4b
 ---------------|--------|----------------
 N_THREADS      | 250    | 250
