@@ -5,4 +5,5 @@ EXTRA_DIST = \
 	xml_formatter.md \
 	guide.md \
 	daemon-hints.md \
+	install-as-lib.md \
 	logger.dtd
