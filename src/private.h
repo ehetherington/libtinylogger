@@ -11,6 +11,8 @@
 /*
  * This file shouldn't be included by user programs or installed into
  * /usr/local/include
+ * This file should only be included AFTER tinylogger.h (needs
+ * TL_BEGIN_C_DECLS, among other things).
  */
 
 #ifndef _PRIVATE_H
@@ -22,9 +24,17 @@
 #include <stdbool.h>
 #include <time.h>
 
+#include "tinylogger.h"
+
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
+// TODO: Check if is necessary. C++ programs shouldn't be calling the
+// included functions directly but the declarations may pollute the
+// symbol space.
+TL_BEGIN_C_DECLS
+
 #define LOG_CH_COUNT 2	/**< The number of channels supported. */
 #define TIMESTAMP_LEN 40	/**< buffer size for formatting date/time */
+
 #endif /* DOXYGEN_SHOULD_SKIP_THIS */
 
 /**
@@ -39,11 +49,22 @@ struct _logChannel {
 	LOG_LEVEL		level;		/**< the minimum level to log */
 	log_formatter_t	formatter;	/**< the formatter to use */
 	char			*pathname;	/**< pathname of the file, if logging to file */
-	bool			line_buffered;	/**< line bufferd if true */
+	bool			line_buffered;	/**< line buffered if true */
 	FILE			*stream;	/**< the stream for output */
+	int				sequence;	/**< sequence number for structured streams (XML) */
+	void (*open_action)(void);	/**< open function for structured streams (XML) */
+	void (*close_action)(void);	/**< close function for structured streams (XML) */
 };
 
-int log_xml_do_head(FILE *stream);
-int log_xml_do_tail(FILE *stream);
+int log_do_xml_head(FILE *stream);
+int log_do_xml_tail(FILE *stream);
+int log_do_json_head(FILE *stream);
+int log_do_json_tail(FILE *stream);
+void log_do_head(LOG_CHANNEL *);
+void log_do_tail(LOG_CHANNEL *);
+
+#ifndef DOXYGEN_SHOULD_SKIP_THIS
+TL_END_C_DECLS
+#endif /* DOXYGEN_SHOULD_SKIP_THIS */
 
 #endif /* _PRIVATE_H */

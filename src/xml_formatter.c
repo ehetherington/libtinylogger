@@ -12,9 +12,14 @@
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
 #define _GNU_SOURCE	/**< for syscall SYS_gettid */
+// from kernel/sched.h
+#define TASK_COMM_LEN 16
+#define NAME_LEN TASK_COMM_LEN  // includes null termination
 #endif /* DOXYGEN_SHOULD_SKIP_THIS */
 
+#include <stdlib.h>
 #include <unistd.h>
+#include <pthread.h>
 #include <sys/syscall.h>
 
 #include "tinylogger.h"
@@ -79,60 +84,6 @@ static char *entity(int character) {
 	}
 }
 
- /*
- * @brief Escape &apos;\b&apos;, &apos;\f&apos;, &apos;\n&apos;, &apos;\r&apos;, &apos;\t&apos;, &apos;\"&apos;, and &apos;\\&apos;
- */
-static int sequence = 0;
-
-#ifndef DOXYGEN_SHOULD_SKIP_THIS
-/**
- * @fn char *escape_json(char const *, char *, int)
- * @brief Escape &apos;\\b&apos;, &apos;\\f&apos;,
- * &apos;\\n&apos;,  &apos;\\r&apos;,
- * &apos;\\t&apos;, &apos;\\"&apos; and
- * &apos;\\\\&apos;.
- *
- * No special treatment of non-ascii characters is performed.
- * @param input the string to escape
- * @param buf a buffer to place the escaped output
- * @param len the length of that buffer.
- */
-char *escape_json(char const *input, char *buf, int len) {
-	char const *ptr_in;
-	char *ptr_out;
-	int n_written;
-
-	if ((input == NULL) || (buf == NULL) || (len == 0)) return NULL;
-
-	for (ptr_in = input, ptr_out = buf;
-		*ptr_in != '\0' && (ptr_out < buf + len);
-		ptr_in++) {
-
-		char *esc = NULL;
-		switch (*ptr_in) {
-			case '\b': esc = "\\\b"; break; 
-			case '\f': esc = "\\\f"; break;
-			case '\n': esc = "\\\n"; break;
-			case '\r': esc = "\\\r"; break;
-			case '\t': esc = "\\\t"; break;
-			case '\"': esc = "\\\""; break;
-			case '\\': esc = "\\\\"; break;
-		}
-		if (esc != NULL) {
-			n_written =
-				snprintf(ptr_out, len - (ptr_out - buf), "%s", esc);
-			ptr_out += n_written;
-		} else {
-			*ptr_out++ = *ptr_in;
-		}
-	}
-
-	*ptr_out = '\0';
-
-	return buf;
-}
-#endif /* DOXYGEN_SHOULD_SKIP_THIS */
-
 /**
  * @fn char *escape_xml(char const *, char *, int)
  * @brief Escape '&', '<', '>', '\"', '\\'
@@ -169,56 +120,24 @@ static char *escape_xml(char const *input, char *buf, int len) {
 	return buf;
 }
 
-static int do_start(FILE *stream) {
+static int do_xml_start(FILE *stream) {
 	return fprintf(stream, "<record>\n");
 }
 
-static int do_date(FILE *stream, const char *date) { 
-	return fprintf(stream, "  <date>%s</date>\n", date);
+static int do_xml_text(FILE *stream, const char *label, const char *value) {
+	return fprintf(stream, "  <%s>%s</%s>\n", label, value, label);
 }
 
-static int do_millis(FILE *stream, const long int millis) {
-	return fprintf(stream, "  <millis>%ld</millis>\n", millis);
+static int do_xml_long(FILE *stream, const char *label, const long value) {
+	return fprintf(stream, "  <%s>%ld</%s>\n", label, value, label);
 }
 
-static int do_nanos(FILE *stream, const long int nanos) {
-	return fprintf(stream, "  <nanos>%ld</nanos>\n", nanos);
-}
-
-static int do_sequence(FILE *stream, const int sequence) {
-	return fprintf(stream, "  <sequence>%d</sequence>\n", sequence);
-}
-
-static int do_logger(FILE *stream, const char *logger) {
-	return fprintf(stream, "  <logger>%s</logger>\n", logger);
-}
-
-static int do_level(FILE *stream, const char *level) {
-	return fprintf(stream, "  <level>%s</level>\n", level);
-}
-
-static int do_class(FILE *stream, const char *class) {
-	return fprintf(stream, "  <class>%s</class>\n", class);
-}
-
-static int do_method(FILE *stream, const char *method) {
-	return fprintf(stream, "  <method>%s</method>\n", method);
-}
-
-static int do_thread(FILE *stream, const pid_t thread) {
-	return fprintf(stream, "  <thread>%d</thread>\n", thread);
-}
-
-static int do_message(FILE *stream, const char *message) {
-	return fprintf(stream, "  <message>%s</message>\n", message);
-}
-
-static int do_end(FILE *stream) {
+static int do_xml_end(FILE *stream) {
 	return fprintf(stream, "</record>\n");
 }
 
 /**
- * @fn int log_xml_do_head(FILE *stream)
+ * @fn int log_do_xml_head(FILE *stream)
  * @brief Write the xml prolog
  *
  * The prolog is identical to the default one produced by
@@ -229,7 +148,7 @@ static int do_end(FILE *stream) {
  * @param stream the stream in use
  * @return the number of bytes written
  */
-int log_xml_do_head(FILE *stream) {
+int log_do_xml_head(FILE *stream) {
 	int n_written = 0;
 	n_written += fprintf(stream, "%s\n", HEAD_1);
 	n_written += fprintf(stream, "%s\n", HEAD_2);
@@ -238,7 +157,7 @@ int log_xml_do_head(FILE *stream) {
 }
 
 /**
- * @fn int log_xml_do_tail(FILE *stream)
+ * @fn int log_do_xml_tail(FILE *stream)
  * @brief write the closing &lt;/log&gt;.
  *
  * The closing &lt;/log&gt; is written.
@@ -246,15 +165,16 @@ int log_xml_do_head(FILE *stream) {
  * @param stream the stream in use
  * @return the number of bytes written
  */
-int log_xml_do_tail(FILE *stream) {
+int log_do_xml_tail(FILE *stream) {
 	return fprintf(stream, "%s\n", TAIL_1);
 }
 
 /**
- * @fn int log_fmt_xml(FILE *stream, struct timespec *ts, int level,
+ * @fn int log_fmt_xml(FILE *stream, int sequence, struct timespec *ts, int level,
  * const char *file, const char *function, int line, char *msg)
  * @brief Output messages with timestamp, level and message.
  * @param stream the output stream to write to
+ * @param sequence the sequence number of the message
  * @param ts the struct timespec timestamp
  * @param level the log level to print
  * @param file the name of the file to print
@@ -279,21 +199,12 @@ int log_xml_do_tail(FILE *stream) {
 </record>
 ```
  */
-int log_fmt_xml(FILE *stream, struct timespec *ts, int level,
+int log_fmt_xml(FILE *stream, int sequence, struct timespec *ts, int level,
     const char *file, const char *function, int line, char *msg) {
     char date[TIMESTAMP_LEN];
 	char buf[BUFSIZ] = {0};
 	long int time_millis;
 	long int time_nanos;
-
-	/*
-	fprintf(stderr, "sizeof time_t = %lu\n", sizeof(time_t));
-	fprintf(stderr, "sizeof long int = %lu\n", sizeof(long int));
-	fprintf(stderr, "sizeof pid_t = %lu\n", sizeof(pid_t));
-
-	fprintf(stderr, "tv_sec was %ld\n", ts->tv_sec);
-	fprintf(stderr, "tv_nsec was %ld\n", ts->tv_nsec);
-	*/
 
 	time_millis = ts->tv_sec * 1000 + ts->tv_nsec / 1000000;
 	time_nanos = ts->tv_nsec % 1000000;
@@ -305,19 +216,18 @@ int log_fmt_xml(FILE *stream, struct timespec *ts, int level,
 
     log_format_timestamp(ts, FMT_UTC_OFFSET | FMT_ISO | SP_MILLI,
 		date, sizeof(date));
-	n_written += do_start(stream);
-	n_written += do_date(stream, date);
-	n_written += do_millis(stream, time_millis);
-	n_written += do_nanos(stream, time_nanos);
-	n_written += do_sequence(stream, sequence++);
-	n_written += do_logger(stream, "tinylogger");
-	n_written += do_level(stream, get_level(level));
-	n_written += do_class(stream, file);
-	n_written += do_method(stream, function);
-	n_written += do_thread(stream, syscall(SYS_gettid));
-	n_written += do_message(stream, buf);
-	n_written += do_end(stream);
+	n_written += do_xml_start(stream);
+	n_written += do_xml_text(stream, "date", date);
+	n_written += do_xml_long(stream, "millis", time_millis);
+	n_written += do_xml_long(stream, "nanos", time_nanos);
+	n_written += do_xml_long(stream, "sequence", sequence);
+	n_written += do_xml_text(stream, "logger", "tinylogger");
+	n_written += do_xml_text(stream, "level", get_level(level));
+	n_written += do_xml_text(stream, "class", file);
+	n_written += do_xml_text(stream, "method", function);
+	n_written += do_xml_long(stream, "thread", syscall(SYS_gettid));
+	n_written += do_xml_text(stream, "message", buf);
+	n_written += do_xml_end(stream);
 
 	return n_written;
 }
-

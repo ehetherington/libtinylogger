@@ -141,7 +141,8 @@ int log_msg(int level,
 	// send the output to the stderr
 	if (!configured) {
 		if (level > pre_init_level) goto unlock; 	// discard
-		log_fmt_standard(stderr,
+		// use sequence number of 0 - discarded by log_fmt_standard
+		log_fmt_standard(stderr, 0,
 				&ts, level, file, function, line_number, msg);
 		goto unlock;
 	}
@@ -149,10 +150,11 @@ int log_msg(int level,
 	//
 	// send the message to any active channels with the proper log level
 	//
-	LOG_CHANNEL channel = (LOG_CHANNEL) log_channels;
+	LOG_CHANNEL *channel = (LOG_CHANNEL *) log_channels;
 	for (int n = 0; n < LOG_CH_COUNT; n++, channel++) {
 		if ((channel->stream != NULL) && (level <= channel->level)) {
-			channel->formatter(channel->stream,
+			// pre-increment sequence - it is cleared to 0 on open
+			channel->formatter(channel->stream, ++channel->sequence,
 				&ts, level, file, function, line_number, msg);
 		}
 	}
@@ -162,6 +164,32 @@ unlock:
 	pthread_mutex_unlock(&log_lock);
 
 	return 0;	// success
+}
+
+/**
+ * @fn void log_do_head(LOG_CHANNEL  *channel)
+ * @brief Write the head for XML and Json output.
+ * @param channel the channel to handle
+ */
+void log_do_head(LOG_CHANNEL  *channel) {
+	if (channel->formatter == log_fmt_xml) {
+		log_do_xml_head(channel->stream);
+	} else if (channel->formatter == log_fmt_json) {
+		log_do_json_head(channel->stream);
+	}
+}
+
+/**
+ * @fn void log_do_tail(LOG_CHANNEL  *channel)
+ * @brief Write the tail for XML and Json output.
+ * @param channel the channel to handle
+ */
+void log_do_tail(LOG_CHANNEL  *channel) {
+	if (channel->formatter == log_fmt_xml) {
+		log_do_xml_tail(channel->stream);
+	} else if (channel->formatter == log_fmt_json) {
+		log_do_json_tail(channel->stream);
+	}
 }
 
 /**
@@ -178,7 +206,7 @@ unlock:
 void log_done(void) {
 	// disable all log_channels
 	// if a channel was file based, flush and close it
-	LOG_CHANNEL log_ch = (LOG_CHANNEL) log_channels;
+	LOG_CHANNEL  *log_ch = (LOG_CHANNEL *) log_channels;
 	for (int n = 0; n < LOG_CH_COUNT; n++, log_ch++) {
 		log_close_channel(log_ch);
 	}
@@ -188,7 +216,7 @@ void log_done(void) {
 }
 
 /**
- * @fn LOG_CHANNEL log_open_channel_s(FILE *stream, LOG_LEVEL level,
+ * @fn LOG_CHANNEL *log_open_channel_s(FILE *stream, LOG_LEVEL level,
  * log_formatter_t formatter)
  * @brief Open a channel for stream output.
  *
@@ -200,9 +228,9 @@ void log_done(void) {
  * @param formatter The message formatter to use.
  * @return NULL on error, else the LOG_CHANNEL
  */
-LOG_CHANNEL log_open_channel_s(FILE *stream, LOG_LEVEL level,
+LOG_CHANNEL *log_open_channel_s(FILE *stream, LOG_LEVEL level,
 	log_formatter_t formatter) {
-	LOG_CHANNEL results = NULL;	// assume failure
+	LOG_CHANNEL *results = NULL;	// assume failure
 	
 	// check that we have a stream
 	if (stream == NULL) return results;
@@ -217,7 +245,7 @@ LOG_CHANNEL log_open_channel_s(FILE *stream, LOG_LEVEL level,
 	pthread_mutex_lock(&log_lock);
 
 	// find an available channel
-	LOG_CHANNEL channel = (LOG_CHANNEL) log_channels;
+	LOG_CHANNEL *channel = (LOG_CHANNEL *) log_channels;
 	int n;
 	for (n = 0; n < LOG_CH_COUNT; n++, channel++) {
 		if ((channel->pathname == NULL) &&
@@ -237,10 +265,7 @@ LOG_CHANNEL log_open_channel_s(FILE *stream, LOG_LEVEL level,
 	channel->level = level;
 	channel->formatter = formatter;
 
-	// ejh xml
-	if (channel->formatter == log_fmt_xml) {
-		log_xml_do_head(channel->stream);
-	}
+	log_do_head(channel);
 
 	// user has set up at least one channel
 	configured = true;
@@ -256,7 +281,7 @@ unlock:
 }
 
 /**
- * @fn LOG_CHANNEL log_open_channel_f(char *pathname, LOG_LEVEL level,
+ * @fn LOG_CHANNEL *log_open_channel_f(char *pathname, LOG_LEVEL level,
  * log_formatter_t formatter, bool line_buffered)
  * @brief Open a channel for output to a file.
  *
@@ -271,9 +296,9 @@ unlock:
  * @param line_buffered Use line buffering vs default
  * @return NULL on error, else the LOG_CHANNEL
  */
-LOG_CHANNEL log_open_channel_f(char *pathname, LOG_LEVEL level,
+LOG_CHANNEL *log_open_channel_f(char *pathname, LOG_LEVEL level,
 	log_formatter_t formatter, bool line_buffered) {
-	LOG_CHANNEL results = NULL;	// assume failure
+	LOG_CHANNEL *results = NULL;	// assume failure
 	
 	// check that we have a pathname
 	if (pathname == NULL) return results;
@@ -288,7 +313,7 @@ LOG_CHANNEL log_open_channel_f(char *pathname, LOG_LEVEL level,
 	pthread_mutex_lock(&log_lock);
 
 	// find an available channel
-	LOG_CHANNEL channel = (LOG_CHANNEL) log_channels;
+	LOG_CHANNEL *channel = (LOG_CHANNEL *) log_channels;
 	int n;
 	for (n = 0; n < LOG_CH_COUNT; n++, channel++) {
 		if ((channel->pathname == NULL) &&
@@ -326,9 +351,7 @@ LOG_CHANNEL log_open_channel_f(char *pathname, LOG_LEVEL level,
 	channel->line_buffered = line_buffered;
 
 	// ejh xml
-	if (channel->formatter == log_fmt_xml) {
-		log_xml_do_head(channel->stream);
-	}
+	log_do_head(channel);
 
 	// user has set up at least one channel
 	configured = true;
@@ -344,7 +367,7 @@ unlock:
 }
 
 /**
- * @fn int log_change_params(LOG_CHANNEL channel, LOG_LEVEL level, 
+ * @fn int log_change_params(LOG_CHANNEL  *channel, LOG_LEVEL level, 
  * log_formatter_t formatter)
  * @brief Change the log level and/or formatter of a channel while it is open.
  *
@@ -356,7 +379,7 @@ unlock:
  * @return 0 on success, -1 if the channel is not currently open or the
  *   formmater is NULL
  */
-int log_change_params(LOG_CHANNEL channel, LOG_LEVEL level, log_formatter_t formatter) {
+int log_change_params(LOG_CHANNEL  *channel, LOG_LEVEL level, log_formatter_t formatter) {
 	int status = -1;	// assume failure
 
 	// log_config is a global resource, LOCK it
@@ -366,7 +389,7 @@ int log_change_params(LOG_CHANNEL channel, LOG_LEVEL level, log_formatter_t form
 	if (formatter == NULL) goto unlock;
 
 	// verify that it is actually a channel
-	LOG_CHANNEL log_ch = (LOG_CHANNEL) log_channels;
+	LOG_CHANNEL  *log_ch = (LOG_CHANNEL *) log_channels;
 	int n;
 	for (n = 0; n < LOG_CH_COUNT; n++, log_ch++) {
 		if (channel == log_ch) {
@@ -392,7 +415,7 @@ unlock:
 }
 
 /**
- * @fn int log_reopen_channel(LOG_CHANNEL channel)
+ * @fn int log_reopen_channel(LOG_CHANNEL *channel)
  * @brief Re-open a channel to support programatic logrotate.
  *
  * If the channel is a file based channel, the file is flushed and closed.
@@ -415,7 +438,7 @@ unlock:
  * @param channel The channel to re-open.
  * @return 0 on success
  */
-int log_reopen_channel(LOG_CHANNEL channel) {
+int log_reopen_channel(LOG_CHANNEL *channel) {
 	char buf[128];
 	char *err_msg;
 	int status = -1;
@@ -424,7 +447,7 @@ int log_reopen_channel(LOG_CHANNEL channel) {
 	pthread_mutex_lock(&log_lock);
 
 	// verify that it is actually a channel
-	LOG_CHANNEL log_ch = (LOG_CHANNEL) log_channels;
+	LOG_CHANNEL *log_ch = (LOG_CHANNEL *) log_channels;
 	int n;
 	for (n = 0; n < LOG_CH_COUNT; n++, log_ch++) {
 		if (channel == log_ch) {
@@ -442,9 +465,7 @@ int log_reopen_channel(LOG_CHANNEL channel) {
 	}
 
 	// ejh xml
-	if (channel->formatter == log_fmt_xml) {
-		log_xml_do_tail(channel->stream);
-	}
+	log_do_tail(channel);
 
 	// flush and close the current file
 	fflush(channel->stream);
@@ -460,9 +481,8 @@ int log_reopen_channel(LOG_CHANNEL channel) {
 	}
 
 	// ejh xml
-	if (channel->formatter == log_fmt_xml) {
-		log_xml_do_head(channel->stream);
-	}
+	channel->sequence = 0;
+	log_do_head(channel);
 
 	// set line buffered output, if requested
 	if (channel->line_buffered && setvbuf(file, NULL, _IOLBF, BUFSIZ)) {
@@ -482,21 +502,21 @@ unlock:
 }
 
 /**
- * @fn int log_close_channel(LOG_CHANNEL channel)
+ * @fn int log_close_channel(LOG_CHANNEL *channel)
  * @brief Flush and close the channel, and mark it not in use.
  *
  * @param channel The channel to close
  * @return 0 on success. If channel is not an actual channel, -1 is returned.
  * If the channel wasn't actually open, -2 is returned.
  */
-int log_close_channel(LOG_CHANNEL channel) {
+int log_close_channel(LOG_CHANNEL *channel) {
 	int status = 0;	// assume success
 
 	// log_config is a global resource, lock it
 	pthread_mutex_lock(&log_lock);
 
 	// verify that it is actually a channel
-	LOG_CHANNEL log_ch = (LOG_CHANNEL) log_channels;
+	LOG_CHANNEL *log_ch = (LOG_CHANNEL *) log_channels;
 	int n;
 	for (n = 0; n < LOG_CH_COUNT; n++, log_ch++) {
 		if (channel == log_ch) {
@@ -515,9 +535,7 @@ int log_close_channel(LOG_CHANNEL channel) {
 	}
 
 	// ejh xml
-	if (channel->formatter == log_fmt_xml) {
-		log_xml_do_tail(channel->stream);
-	}
+	log_do_tail(channel);
 
 	// If we are closing an existing file based config, that means we need to
 	// flush and close the file.

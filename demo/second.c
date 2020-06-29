@@ -9,8 +9,8 @@ int main(void) {
 	 *  set format to debug
 	 *  turn line buffering on (useful with tail -f, for example)
 	 */
-	LOG_CHANNEL ch1 = log_open_channel_s(stderr, LL_INFO, log_fmt_systemd);
-	LOG_CHANNEL ch2 = log_open_channel_f(DEBUG_PATHNAME, LL_FINE, log_fmt_debug, true);
+	LOG_CHANNEL *ch1 = log_open_channel_s(stderr, LL_INFO, log_fmt_systemd);
+	LOG_CHANNEL *ch2 = log_open_channel_f(DEBUG_PATHNAME, LL_FINE, log_fmt_debug, true);
 	log_notice("this message will be printed to both");
 	log_info("this message will be printed to both");
 	log_debug("this message will be printed to file only");

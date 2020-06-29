@@ -17,3 +17,5 @@ java.util.logging.XMLFormatter format.
 [daemon hints](./daemon-hints.md)
 Some hints to set up use in a daemon.
 
+[installing as a lib](./install-as-lib.md)
+Notes about installing as a lib.

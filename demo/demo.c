@@ -37,7 +37,7 @@ static void inthandler(int sig) {
 int main(int argc, char **argv) {
 	char buf[FILENAME_MAX];
 	pid_t my_pid = getpid();
-	LOG_CHANNEL ch1, ch2;
+	LOG_CHANNEL *ch1, *ch2;
 
 	/*
 	 * Set up for Ctl-c handling to clean up before the program is done.

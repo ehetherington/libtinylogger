@@ -10,6 +10,7 @@ libtinylogger_la_SOURCES = \
 	private.h \
 	formatters.c \
 	xml_formatter.c \
+	json_formatter.c \
 	logrotate.c
 libtinylogger_la_CFLAGS = -pthread $(AM_CFLAGS)
 libtinylogger_la_LDFLAGS = -version-info 0:0:0

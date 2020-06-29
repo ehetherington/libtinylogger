@@ -17,12 +17,16 @@
 #define TASK_COMM_LEN 16
 #define NAME_LEN TASK_COMM_LEN	// includes null termination
 
-#define LOG_FILE "/tmp/hive.log"
+//#define LOG_FILE "/tmp/hive.log"
+#define LOG_FILE "hive.json"
+//#define LOG_FILE "hive.xml"
 //#define LOG_FILE "/dev/null"
 
-#define N_THREADS	250
-#define N_LOOPS		4000
-#define DO_CHECK	true
+#define N_THREADS		250
+#define N_LOOPS			1000
+#define SLEEP_MICROS	500
+#define DO_CHECK		false
+#define FORMAT			log_fmt_json
 
 struct thread_info {
 	char	name[NAME_LEN];
@@ -77,7 +81,7 @@ static void *threadFunc(void *parm) {
 		int x = rand_r(&seed);
 		double X = (double) x / (double) RAND_MAX;
 
-		x = (int) ((double) 1000) * X;
+		x = (int) ((double) SLEEP_MICROS) * X;
 
 		log_info("sleeping %d microseconds, s/n=%d, tid=%d",
 			x, n, thread_info->tid);
@@ -175,7 +179,9 @@ void scan_file(char *pathname) {
 int main(void) {
 	int rc;
 
-	LOG_CHANNEL ch2 = log_open_channel_f(LOG_FILE, LL_INFO, log_fmt_tall, true);
+	//LOG_CHANNEL *ch2 = log_open_channel_f(LOG_FILE, LL_INFO, log_fmt_tall, true);
+	LOG_CHANNEL *ch2 = log_open_channel_f(LOG_FILE, LL_INFO, FORMAT, false);
+	//LOG_CHANNEL *ch2 = log_open_channel_f(LOG_FILE, LL_INFO, log_fmt_json, false);
 	if (ch2 == NULL) {
 		fprintf(stderr, "problem opening %s for appending\n", LOG_FILE);
 		exit(EXIT_FAILURE);

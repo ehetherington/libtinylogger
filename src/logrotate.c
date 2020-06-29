@@ -59,7 +59,7 @@ static void *log_sighandler(void *config) {
 	int			signum;
 	int			rc;
 	struct rotate_config *tc = config;
-	LOG_CHANNEL ch = (LOG_CHANNEL) log_channels;
+	LOG_CHANNEL *ch = (LOG_CHANNEL *) log_channels;
 
 	// TODO: don't be so drastic on failure
 	rc = pthread_setname_np(me, "log_sighandler");
@@ -92,6 +92,7 @@ static void *log_sighandler(void *config) {
 
 			// make sure we have a stream to flush/close
 			if (ch->stream) {
+				log_do_tail(ch);
 				fflush(ch->stream);
 				fclose(ch->stream);
 				ch->stream = NULL;
@@ -106,6 +107,7 @@ static void *log_sighandler(void *config) {
 			if ((ch->stream != NULL) && ch->line_buffered) {
 				setvbuf(ch->stream, NULL, _IOLBF, BUFSIZ);
 			}
+			log_do_head(ch);
 		}
 
 		pthread_mutex_unlock(&log_lock);
@@ -113,7 +115,7 @@ static void *log_sighandler(void *config) {
 
 	// done
 	pthread_mutex_lock(&log_lock);
-	ch = (LOG_CHANNEL) log_channels;
+	ch = (LOG_CHANNEL *) log_channels;
 	for (int n = 0; n < LOG_CH_COUNT; n++, ch++) {
 		if ((ch->pathname != NULL) && (ch->stream != NULL)) {
 			fflush(ch->stream);

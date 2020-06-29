@@ -28,7 +28,8 @@ GUIDE_SRCS = \
 # dependancies need work
 SOURCES = \
 	doxygen.conf \
-	$(GUIDE_SRCS) \
+	$(top_srcdir)/README.md \
+	$(md_srcs) \
 	$(demo_srcs) \
 	$(code_srcs)
 

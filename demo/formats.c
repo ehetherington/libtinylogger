@@ -23,6 +23,7 @@
  *
  * @param msg the actual user message
  * @param stream the output stream to write to
+ * @param sequence ignored
  * @param ts the struct timespec timestamp
  * @param level the log level to print
  * @param file the name of the file to print
@@ -31,7 +32,7 @@
  * @param msg the actual use message to print
  * @return the number of characters written
  */
-int log_fmt_custom_1(FILE *stream, struct timespec *ts, int level,
+int log_fmt_custom_1(FILE *stream, int sequence, struct timespec *ts, int level,
 	const char *file, const char *function, int line, char *msg) {
 	char date[32];
 	pthread_t thread = pthread_self();
@@ -67,6 +68,7 @@ int log_fmt_custom_1(FILE *stream, struct timespec *ts, int level,
  *
  * @param msg the actual user message
  * @param stream the output stream to write to
+ * @param sequence ignored
  * @param ts the struct timespec timestamp
  * @param level the log level to print
  * @param file the name of the file to print
@@ -74,7 +76,7 @@ int log_fmt_custom_1(FILE *stream, struct timespec *ts, int level,
  * @param line the line number to print
  * @param msg the actual use message to print
  */
-int log_fmt_custom_2(FILE *stream, struct timespec *ts, int level,
+int log_fmt_custom_2(FILE *stream, int sequence, struct timespec *ts, int level,
 	const char *file, const char *function, int line, char *msg) {
 	char date[32];
 	struct tm tm;
@@ -99,7 +101,7 @@ int main(void) {
 	 * set format to debug
 	 * turn line buffering on (useful with tail -f, for example)
 	 */
-	LOG_CHANNEL ch1;
+	LOG_CHANNEL *ch1;
 
 	ch1 = log_open_channel_s(stderr, LL_INFO, log_fmt_basic);
 	log_info("this message uses the basic format");
@@ -139,7 +141,7 @@ int main(void) {
 	log_info("this message uses a another CUSTOM format");
 
 	log_change_params(ch1, LL_INFO, log_fmt_xml);
-	log_info("this message uses the \"<xml>\" format & it's easy!");
+	log_info("this message has excaped \"<xml>\", apostrophe also '");
 	log_info("this message has no escaped xml");
 
 	log_done();

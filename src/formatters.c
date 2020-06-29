@@ -87,8 +87,15 @@ LOG_LEVEL log_get_level(const char *label) {
     return LL_INVALID;
 }
 
+/** @fn void do_offset(struct tm const *tm, char *buf, int len)
+ * @brief Tack on the UTC offset to a data/time timestamp.
+ * The buffer must be at least 10 characters long to hold the longest
+ * offset.
+ * @param tm the struct tm containing the offset
+ * @param buf The buffer to write the offset to.
+ * @param len The length of that buffer.
+ */
 static void do_offset(struct tm const *tm, char *buf, int len) {
-static char *fmt_hour = "%+03ld";
 static char *fmt_min  = "%+03ld:%02ld";
 static char *fmt_sec  = "%+03ld:%02ld:%02ld";
 	long hours, minutes, seconds;
@@ -101,15 +108,12 @@ static char *fmt_sec  = "%+03ld:%02ld:%02ld";
     seconds = off_remainder;
 
 	if (seconds == 0) {
-		if (minutes == 0) {
-			snprintf(buf, len, fmt_hour, hours);
-		} else {
-			snprintf(buf, len, fmt_min, hours, minutes);
-		}
+		snprintf(buf, len, fmt_min, hours, minutes);
 	} else {
 		snprintf(buf, len, fmt_sec, hours, minutes, seconds);
 	}
 	/*
+	 * Consider adding the timezone.
 	printf(" (%s)\n", tm->tm_zone);
 	*/
 }
@@ -179,12 +183,13 @@ void log_format_timestamp(struct timespec *ts, SEC_PRECISION precision,
 
 #pragma GCC diagnostic pop
 /**
- * @fn int log_fmt_basic(FILE *, struct timespec *, int,
+ * @fn int log_fmt_basic(FILE *, int sequence, struct timespec *, int,
  * const char *, const char *, int, char *)
  * @brief Output messages with just the user message.
  *
  * @param msg the actual user message
  * @param stream the output stream to write to
+ * @param sequence the sequence number of the message
  * @param ts the struct timespec timestamp
  * @param level the log level to print
  * @param file the name of the file to print
@@ -197,17 +202,18 @@ void log_format_timestamp(struct timespec *ts, SEC_PRECISION precision,
 eth0     AF_PACKET (17)
 ```
  */
-int log_fmt_basic(FILE *stream, struct timespec *ts, int level,
+int log_fmt_basic(FILE *stream, int sequence, struct timespec *ts, int level,
 	const char *file, const char *function, int line, char *msg) {
 	return fprintf(stderr, "%s\n", msg);
 }
 
 /**
- * @fn int log_fmt_systemd(FILE *, struct timespec *, int,
+ * @fn int log_fmt_systemd(FILE *, int, struct timespec *, int,
  * const char *, const char *, int, char *)
  * @brief Output messages in systemd compatible format.
  *
  * @param stream the output stream to write to
+ * @param sequence the sequence number of the message
  * @param ts the struct timmespec timestamp
  * @param level the log level to print
  * @param file the name of the file to print
@@ -221,18 +227,19 @@ int log_fmt_basic(FILE *stream, struct timespec *ts, int level,
 <7>eth0     AF_PACKET (17)
 ```
  */
-int log_fmt_systemd(FILE *stream, struct timespec *ts, int level,
+int log_fmt_systemd(FILE *stream, int sequence, struct timespec *ts, int level,
 	const char *file, const char *function, int line, char *msg) {
 	return fprintf(stream, "%s%s\n", log_labels[level].systemd, msg);
 }
 
 
 /**
- * @fn int log_fmt_standard(FILE *, struct timespec *, int,
+ * @fn int log_fmt_standard(FILE *, int sequence, struct timespec *, int,
  * const char *, const char *, int, char *)
  * @brief Output messages with timestamp, level and message.
  *
  * @param stream the output stream to write to
+ * @param sequence the sequence number of the message
  * @param ts the struct timespec timestamp
  * @param level the log level to print
  * @param file the name of the file to print
@@ -246,7 +253,7 @@ int log_fmt_systemd(FILE *stream, struct timespec *ts, int level,
 2020-05-25 16:55:18 DEBUG   eth0     AF_PACKET (17)
 ```
  */
-int log_fmt_standard(FILE *stream, struct timespec *ts, int level,
+int log_fmt_standard(FILE *stream, int sequence, struct timespec *ts, int level,
 	const char *file, const char *function, int line, char *msg) {
 	char date[TIMESTAMP_LEN];
 	// (-7 - let critical and emergency stick out, Use -9 to align them all)
@@ -256,11 +263,12 @@ int log_fmt_standard(FILE *stream, struct timespec *ts, int level,
 }
 
 /**
- * @fn int log_fmt_tall(FILE *, struct timespec *, int,
+ * @fn int log_fmt_tall(FILE *, int, struct timespec *, int,
  * const char *, const char *, int, char *)
  * @brief Debug format with thread id added.
  *
  * @param stream the output stream to write to
+ * @param sequence the sequence number of the message
  * @param ts the struct timmespec timestamp
  * @param level the log level to print
  * @param file the name of the file to print
@@ -274,7 +282,7 @@ int log_fmt_standard(FILE *stream, struct timespec *ts, int level,
 2020-05-25 17:28:17.011 DEBUG   65623:thread_2 eth0     AF_PACKET (17)
 ```
  */
-int log_fmt_tall(FILE *stream, struct timespec *ts, int level,
+int log_fmt_tall(FILE *stream, int sequence, struct timespec *ts, int level,
 	const char *file, const char *function, int line, char *msg) {
 	char date[TIMESTAMP_LEN];
 	pthread_t thread = pthread_self();
@@ -291,12 +299,13 @@ int log_fmt_tall(FILE *stream, struct timespec *ts, int level,
 }
 
 /**
- * @fn int log_fmt_debug(FILE *, struct timespec *, int,
+ * @fn int log_fmt_debug(FILE *, int, struct timespec *, int,
  * const char *, const char *, int, char *)
  * @brief Output messages with timestamp, level, source code file, function,
  * and line number, and finally the message.
  *
  * @param stream the output stream to write to
+ * @param sequence the sequence number of the message
  * @param ts the struct timmespec timestamp
  * @param level the log level to print
  * @param file the name of the file to print
@@ -310,7 +319,7 @@ int log_fmt_tall(FILE *stream, struct timespec *ts, int level,
 2020-05-25 17:28:17.011 DEBUG   test-logger.c:main:110 eth0     AF_PACKET (17)
 ```
  */
-int log_fmt_debug(FILE *stream, struct timespec *ts, int level,
+int log_fmt_debug(FILE *stream, int sequence, struct timespec *ts, int level,
 	const char *file, const char *function, int line, char *msg) {
 	char date[TIMESTAMP_LEN];
 	log_format_timestamp(ts, SP_MILLI, date, sizeof(date));
@@ -320,11 +329,12 @@ int log_fmt_debug(FILE *stream, struct timespec *ts, int level,
 }
 
 /**
- * @fn int log_fmt_debug_tid(FILE *, struct timespec *, int,
+ * @fn int log_fmt_debug_tid(FILE *, int, struct timespec *, int,
  * const char *, const char *, int, char *)
  * @brief Debug format with thread id added.
  *
  * @param stream the output stream to write to
+ * @param sequence the sequence number of the message
  * @param ts the struct timmespec timestamp
  * @param level the log level to print
  * @param file the name of the file to print
@@ -338,7 +348,7 @@ int log_fmt_debug(FILE *stream, struct timespec *ts, int level,
 2020-05-25 17:28:17.011 DEBUG   65623 test-logger.c:main:110 eth0     AF_PACKET (17)
 ```
  */
-int log_fmt_debug_tid(FILE *stream, struct timespec *ts, int level,
+int log_fmt_debug_tid(FILE *stream, int sequence, struct timespec *ts, int level,
 	const char *file, const char *function, int line, char *msg) {
 	char date[TIMESTAMP_LEN];
 	log_format_timestamp(ts, SP_MILLI, date, sizeof(date));
@@ -348,11 +358,12 @@ int log_fmt_debug_tid(FILE *stream, struct timespec *ts, int level,
 }
 
 /**
- * @fn int log_fmt_debug_tname(FILE *, struct timespec *, int,
+ * @fn int log_fmt_debug_tname(FILE *, int, struct timespec *, int,
  * const char *, const char *, int, char *)
  * @brief Debug format with thread name added.
  *
  * @param stream the output stream to write to
+ * @param sequence the sequence number of the message
  * @param ts the struct timmespec timestamp
  * @param level the log level to print
  * @param file the name of the file to print
@@ -366,7 +377,7 @@ int log_fmt_debug_tid(FILE *stream, struct timespec *ts, int level,
 2020-05-25 17:28:17.011 DEBUG   thread_2 test-logger.c:main:110 eth0     AF_PACKET (17)
 ```
  */
-int log_fmt_debug_tname(FILE *stream, struct timespec *ts, int level,
+int log_fmt_debug_tname(FILE *stream, int sequence, struct timespec *ts, int level,
 	const char *file, const char *function, int line, char *msg) {
 	char date[TIMESTAMP_LEN];
 	pthread_t thread = pthread_self();
@@ -384,11 +395,12 @@ int log_fmt_debug_tname(FILE *stream, struct timespec *ts, int level,
 
 
 /**
- * @fn int log_fmt_debug_tall(FILE *, struct timespec *, int,
+ * @fn int log_fmt_debug_tall(FILE *, int, struct timespec *, int,
  * const char *, const char *, int, char *)
  * @brief Debug format with thread id and name added.
  *
  * @param stream the output stream to write to
+ * @param sequence the sequence number of the message
  * @param ts the struct timmespec timestamp
  * @param level the log level to print
  * @param file the name of the file to print
@@ -402,7 +414,7 @@ int log_fmt_debug_tname(FILE *stream, struct timespec *ts, int level,
 2020-05-25 17:28:17.011 DEBUG   65623:thread_2 test-logger.c:main:110 eth0     AF_PACKET (17)
 ```
  */
-int log_fmt_debug_tall(FILE *stream, struct timespec *ts, int level,
+int log_fmt_debug_tall(FILE *stream, int sequence, struct timespec *ts, int level,
 	const char *file, const char *function, int line, char *msg) {
 	char date[TIMESTAMP_LEN];
 	pthread_t thread = pthread_self();

@@ -9,11 +9,12 @@ noinst_PROGRAMS = \
 	demo \
 	beehive \
 	xml \
+	json \
 	xml-levels \
 	parse_time
 
 JAVAROOT = .
-dist_noinst_JAVA = ParseDate.java
+dist_noinst_JAVA = ParseXMLDate.java
 
 hello_world_SOURCES = hello_world.c
 hello_world_LDADD = ../src/libtinylogger.la
@@ -35,6 +36,9 @@ beehive_LDADD = ../src/libtinylogger.la
 
 xml_SOURCES = xml.c
 xml_LDADD = ../src/libtinylogger.la
+
+json_SOURCES = json.c
+json_LDADD = ../src/libtinylogger.la
 
 xml_levels_SOURCES = xml-levels.c
 xml_levels_LDADD = ../src/libtinylogger.la

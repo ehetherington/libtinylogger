@@ -64,7 +64,7 @@ int main(void) {
 	int rc;
 	char thread_name[NAME_LEN];
 
-	LOG_CHANNEL ch1 = log_open_channel_s(stderr, LL_INFO, log_fmt_debug_tall);
+	LOG_CHANNEL *ch1 = log_open_channel_s(stderr, LL_INFO, log_fmt_debug_tall);
 
 	if (ch1 == NULL) {
 		fprintf(stderr, "error opening channel\n");

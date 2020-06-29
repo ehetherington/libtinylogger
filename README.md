@@ -13,18 +13,15 @@ It may be compiled directly with a target program, or installed as a library.
 - Output may be directed to a stream or a file.
 - Messages are filtered by a log level.
 - It produces output in a few different styles.
+  - Pre-defined formats for systemd, standard and debug use.
   - User defined formatters are possible.
+  - Structured output in XML and Json
 - multi-thread support, with formats that print thread id and name
 - logrotate support. Flushes, closes, and opens a log file on receipt of a
   signal from logrotate.
 - tested on 64 and 32 bit Linux
   - RHEL 8.1 4.18.0-193.1.2.el8_2.x86_64 
   - Raspian Buster 4.19.97-v7l+
-
-## Credits:
-[Nominal Animal](https://stackoverflow.com/users/1475978/nominal-animal) made an excellent 
-[post](https://stackoverflow.com/questions/53188731/logging-compatibly-with-logrotate#53201067)
-on [StackOverflow](https://stackoverflow.com) illustrating logrotate support.
 
 ## Table of contents
 1. [Dependancies](#dependancies)
@@ -99,9 +96,19 @@ Source code: [hello_world.c](demo/hello_world.c)
     }
 ~~~
 
-To compile:
+To compile with library installed:
 
     gcc -o hello_world hello_world.c -pthread -lpthread -ltinylogger
+
+Minimum Makefile without library installed:
+```
+TINY_LOGGER_HDRS = config.h tinylogger.h private.h
+TINY_LOGGER_SRCS = tinylogger.c formatters.c xml_formatter.c logrotate.c
+
+LDFLAGS = -lpthread
+
+hello_world: hello_world.c $(TINY_LOGGER_HDRS) $(TINY_LOGGER_SRCS)
+```
 
 The output to stderr would be:
 
@@ -129,8 +136,8 @@ int main(void) {
 	 *  set format to debug
 	 *  turn line buffering on (useful with tail -f, for example)
 	 */
-	LOG_CHANNEL ch1 = log_open_channel_s(stderr, LL_INFO, log_fmt_systemd);
-	LOG_CHANNEL ch2 = log_open_channel_f(DEBUG_PATHNAME, LL_FINE, log_fmt_debug, true);
+	LOG_CHANNEL *ch1 = log_open_channel_s(stderr, LL_INFO, log_fmt_systemd);
+	LOG_CHANNEL *ch2 = log_open_channel_f(DEBUG_PATHNAME, LL_FINE, log_fmt_debug, true);
 	log_notice("this message will be printed to both");
 	log_info("this message will be printed to both");
 	log_debug("this message will be printed to file only");
@@ -219,19 +226,17 @@ Output messages in java.util.logging.XMLFormatter format.
 
 ```
 <record>
-  <date>2020-06-14T15:19:50.437</date>
-  <millis>1592162390437</millis>
-  <nanos>522456</nanos>
-  <sequence>0</sequence>
+  <date>2020-06-19T22:43:01.915644710-04:00:00</date>
+  <millis>1592620981915</millis>
+  <nanos>644710</nanos>
+  <sequence>2</sequence>
   <logger>tinylogger</logger>
   <level>INFO</level>
-  <class>formats.c</class>
+  <class>xml.c</class>
   <method>main</method>
-  <thread>419645</thread>
-  <message>this message uses the &quot;&lg;xml&gt;&quot; format &amp; it&apos;s easy!</message>
+  <thread>1002084</thread>
+  <message>This message uses the &quot;&lt;xml&gt;&quot; format. It&apos;s msg #2.</message>
 </record>
-
-
 ```
 
 ## Example Output <a name="example-output"/>
@@ -269,7 +274,7 @@ id displayed, for instance, by:
 ```
 $ ps H -C threads -o 'pid tid cmd comm'
 ```
-Examples that use threads and message formats that display the thread id are
+Examples with multiple threads and message formats that display thread id are:
 [threads.c](demo/threads.c) and [beehive.c](demo/beehive.c).
 
 

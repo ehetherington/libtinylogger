@@ -80,7 +80,7 @@ extern struct log_label log_labels[LL_N_VALUES];
 /**
  * Formatters must have this signature.
  */
-typedef int (*log_formatter_t)(FILE *, struct timespec *, int,
+typedef int (*log_formatter_t)(FILE *, int, struct timespec *, int,
     const char *, const char *, int, char *);
 
 /**
@@ -97,32 +97,32 @@ typedef enum {
 
 struct _logChannel;
 /** Opaque */
-typedef struct _logChannel* LOG_CHANNEL;
+typedef struct _logChannel LOG_CHANNEL;
 
 void log_set_pre_init_level(LOG_LEVEL log_level);
 LOG_LEVEL log_get_level(const char *label);
-//LOG_LEVEL log_constrain_level(LOG_LEVEL level);
 
 /* channel control */
-LOG_CHANNEL log_open_channel_s(FILE *, LOG_LEVEL, log_formatter_t);
-LOG_CHANNEL log_open_channel_f(char *, LOG_LEVEL, log_formatter_t, bool);
+LOG_CHANNEL *log_open_channel_s(FILE *, LOG_LEVEL, log_formatter_t);
+LOG_CHANNEL *log_open_channel_f(char *, LOG_LEVEL, log_formatter_t, bool);
 int log_msg(int level, const char *file, const char *function,
 	const int line, const char *format, ...);
-int log_change_params(LOG_CHANNEL, LOG_LEVEL, log_formatter_t);
-int log_reopen_channel(LOG_CHANNEL);
-int log_close_channel(LOG_CHANNEL);
+int log_change_params(LOG_CHANNEL *, LOG_LEVEL, log_formatter_t);
+int log_reopen_channel(LOG_CHANNEL *);
+int log_close_channel(LOG_CHANNEL *);
 void log_done(void);
 
 /* the formatters */
-int log_fmt_basic(FILE *, struct timespec *, int, const char *, const char *, int, char *);
-int log_fmt_systemd(FILE *, struct timespec *, int, const char *, const char *, int, char *);
-int log_fmt_standard(FILE *, struct timespec *, int, const char *, const char *, int, char *);
-int log_fmt_debug(FILE *, struct timespec *, int, const char *, const char *, int, char *);
-int log_fmt_tall(FILE *, struct timespec *, int, const char *, const char *, int, char *);
-int log_fmt_debug_tid(FILE *, struct timespec *, int, const char *, const char *, int, char *);
-int log_fmt_debug_tname(FILE *, struct timespec *, int, const char *, const char *, int, char *);
-int log_fmt_debug_tall(FILE *, struct timespec *, int, const char *, const char *, int, char *);
-int log_fmt_xml(FILE *, struct timespec *, int, const char *, const char *, int, char *);
+int log_fmt_basic(FILE *, int, struct timespec *, int, const char *, const char *, int, char *);
+int log_fmt_systemd(FILE *, int, struct timespec *, int, const char *, const char *, int, char *);
+int log_fmt_standard(FILE *, int, struct timespec *, int, const char *, const char *, int, char *);
+int log_fmt_debug(FILE *, int, struct timespec *, int, const char *, const char *, int, char *);
+int log_fmt_tall(FILE *, int, struct timespec *, int, const char *, const char *, int, char *);
+int log_fmt_debug_tid(FILE *, int, struct timespec *, int, const char *, const char *, int, char *);
+int log_fmt_debug_tname(FILE *, int, struct timespec *, int, const char *, const char *, int, char *);
+int log_fmt_debug_tall(FILE *, int, struct timespec *, int, const char *, const char *, int, char *);
+int log_fmt_xml(FILE *, int, struct timespec *, int, const char *, const char *, int, char *);
+int log_fmt_json(FILE *, int, struct timespec *, int, const char *, const char *, int, char *);
 
 /* timestamp formatter for the formatters that include a timestamp */
 void log_format_timestamp(struct timespec *ts, SEC_PRECISION precision, char *buf, int len);

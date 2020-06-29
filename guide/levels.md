@@ -41,7 +41,7 @@ int main(void) {
 	 * Use the xml formatter
 	 * Use line buffered output
 	 */
-	LOG_CHANNEL ch1 = log_open_channel_f(LOG_FILE, LL_ALL, log_fmt_xml, true);
+	LOG_CHANNEL *ch1 = log_open_channel_f(LOG_FILE, LL_ALL, log_fmt_xml, true);
 	(void) ch1;	// quiet the "unused variable" warning
 
 	log_emerg("emerg level");

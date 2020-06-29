@@ -24,7 +24,7 @@ Setup is:
 ```{.c}
 	#include <tinylogger.h>>
 
-	LOG_CHANNEL ch1 = log_open_channel_s(stderr, LL_INFO, log_fmt_systemd);
+	LOG_CHANNEL *ch1 = log_open_channel_s(stderr, LL_INFO, log_fmt_systemd);
     log_info("this message will be logged with systemd understanding the log levels");
 
 ```
@@ -69,6 +69,14 @@ WantedBy=multi-user.target
 
 ### initd/logrotate
 
+Logrotate support was implemented by using a background thread that
+listens for a user specified signal to re-open the log file.
+[Nominal Animal](https://stackoverflow.com/users/1475978/nominal-animal) made
+an excellent
+[post](https://stackoverflow.com/questions/53188731/logging-compatibly-with-logrotate#53201067)
+on [StackOverflow](https://stackoverflow.com) illustrating that method.
+
+
 "man lograte" is the first place to look to see what options are available.
 
 Your app doesn't actually need to be a daemon to take advantage of logrotate.
@@ -100,7 +108,7 @@ Matching code to match that:
 	#include <signal.h>
 	#include <tinylogger.h>
 
-    LOG_CHANNEL ch1 = log_open_channel_f("/var/log/yourapp/yourapp.log", LL_INFO, log_fmt_standard);
+    LOG_CHANNEL *ch1 = log_open_channel_f("/var/log/yourapp/yourapp.log", LL_INFO, log_fmt_standard);
     log_enable_logrotate(SIGUSR1);
     log_info("logging starts");
 ```

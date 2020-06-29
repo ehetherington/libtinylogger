@@ -1,4 +1,4 @@
-EXTRA_DIST = LICENSE README.md README-install-lib.txt
+EXTRA_DIST = LICENSE README.md
 
 SUBDIRS = src demo guide doc
 
