@@ -89,11 +89,11 @@ private.h have been documented with doxygen flavored comments.
 Source code: [hello_world.c](demo/hello_world.c)
 
 ~~~{.c}
-    #include "tinylogger.h"
+#include "tinylogger.h"
 
-    int main(void) {
-        log_info("hello, %s\n", "world");
-    }
+int main(void) {
+    log_info("hello, %s\n", "world");
+}
 ~~~
 
 To compile with library installed:
