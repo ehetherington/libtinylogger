@@ -40,19 +40,11 @@ It may be compiled directly with a target program, or installed as a library.
 6. [Additional Information](guide/guide.md)
 
 ## Dependancies <a name="dependancies"></a>
-- sd-daemon.h
-  - RHEL8
-```
-$ sudo dnf install systemd-devel
-```
-
-  - Raspbian
-```
-$ sudo apt install libsystemd-dev
-```
+- sd-daemon.h That header can be found in a systemd development package. On
+  RHEL8, it can be found in systemd-devel. On Raspbian it can be found in libsystemd-dev.
 
 - Building the docs is optional. If you want to build the docs, There is a
-	[guide](guide/doxygen.md) for installing doxygen on RHEL8 and Raspbian.
+  [guide](guide/doxygen.md) for installing doxygen on RHEL8 and Raspbian.
 
 ## Installation <a name="installation"></a>
 ### Installation as a library is optional
