@@ -12,7 +12,7 @@ It may be compiled directly with a target program, or installed as a library.
 
 - Output may be directed to a stream or a file.
 - Messages are filtered by a log level.
-- It produces output in a few different styles.
+- It produces output in a few different formats.
   - Pre-defined formats for systemd, standard and debug use.
   - User defined formatters are possible.
   - Structured output in XML and Json
@@ -29,7 +29,7 @@ It may be compiled directly with a target program, or installed as a library.
 3. [Usage](#usage)
    - [Hello world](#hello-world)
    - [Two streams](#two-streams)
-4. [Output styles](#output-styles)
+4. [Output formats](#output-formats)
    - [basic](#basic)
    - [systemd](#systemd)
    - [standard](#standard)
@@ -46,14 +46,14 @@ It may be compiled directly with a target program, or installed as a library.
 ```
 $ sudo dnf install systemd-devel
 ```
+
   - Raspbian
 ```
 $ sudo apt install libsystemd-dev
 ```
+
 - Building the docs is optional. If you want to build the docs, There is a
 	[guide](guide/doxygen.md) for installing doxygen on RHEL8 and Raspbian.
-- I didn't keep a list of things I needed to install. Configure.ac needs work.
-	docs/Makefile.am needs a lot of work.
 
 ## Installation <a name="installation"></a>
 ### Installation as a library is optional
@@ -77,23 +77,25 @@ The source files
 [tinylogger.c](src/tinylogger.c)
 [tinylogger.h](src/tinylogger.h)
 [formatters.c](src/formatters.c)
+[json_formatter.c](src/json_formatter.c)
+[xml_formatter.c](src/xml_formatter.c)
 [logrotate.c](src/logrotate.c)
 [private.h](src/private.h)
 may alternatively be compiled and linked directly to your program.
 
-tinylogger.c, tinylogger.h, formatters.c, logrotate.c and
-private.h have been documented with doxygen flavored comments.
+tinylogger.c, tinylogger.h, formatters.c, json_formatter,c, xml_formatter.c
+logrotate.c and private.h have been documented with doxygen flavored comments.
 
 ### The obligatory minimal program would be: <a name="hello-world"></a>
 
 Source code: [hello_world.c](demo/hello_world.c)
 
 ~~~{.c}
-#include "tinylogger.h"
+    #include "tinylogger.h"
 
-int main(void) {
-    log_info("hello, %s\n", "world");
-}
+    int main(void) {
+        log_info("hello, %s\n", "world");
+    }
 ~~~
 
 To compile with library installed:
@@ -171,9 +173,9 @@ the features available. To compile and run it:
 	$ gcc -o test-logger test-logger.c -pthread -lpthread -ltinylogger
 	$ ./test-logger
 
-## Pre-configured output styles available <a name="output-styles"/>
+## Pre-configured output formats available <a name="output-formats"/>
 Based on the output format selected by the user, a use of log_debug() will
-produce a variety of output styles. Given the following line of code:
+produce a variety of output formats. Given the following line of code:
 
 ~~~{.c}
     log_debug("%s AF_PACKET(%d)", ifname, address_family);
@@ -282,6 +284,8 @@ Examples with multiple threads and message formats that display thread id are:
 A custom format may be created. This [demo program](demo/formats.c) shows
 how to create a custom format and demonstrates it and all the predefined
 ones.
+
+This is the output from that program:
 ```
 this message uses the basic format
 <6>this message uses the systemd format
@@ -292,5 +296,4 @@ this message uses the basic format
 2020-06-13 09:41:04.678 INFO    327645:formats formats.c:main:123 this message uses the debug_tall format
 June 13, 2020, 09:41:04 INFO    327645:formats this message uses a CUSTOM format
 junio 13, 2020, 09:41:04 INFO    formats.c:main:139 this message uses a another CUSTOM format
-This is the output from that program:
 ```
