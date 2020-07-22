@@ -1,6 +1,5 @@
 ## libTinyLogger
 
-## Description
 ### Small Yet Flexible Logger In C.
 
 This is a small logging facility intended for small Linux projects. It logs
@@ -61,7 +60,7 @@ This is an Autotools package. For installation into /usr/local/lib,
 installation is very easy.
 
 	$ autoreconf -i
-    $ ./configure
+	$ ./configure
 	$ make
 	$ sudo make install
 
