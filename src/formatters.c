@@ -28,10 +28,11 @@
 #include <pthread.h>
 #include <sys/types.h>
 #include <sys/syscall.h>
-#ifdef HAVE_SYSTEMD_SD_DAEMON_H
-#include <systemd/sd-daemon.h>
+
+#if HAVE_SYSTEMD_SD_DAEMON_H
+	#include <systemd/sd-daemon.h>
 #else
-#include "alternatives/sd-daemon.h"
+	#include "alternatives/sd-daemon.h"
 #endif
 
 #include "tinylogger.h"
@@ -87,7 +88,8 @@ LOG_LEVEL log_get_level(const char *label) {
     return LL_INVALID;
 }
 
-/** @fn void do_offset(struct tm const *tm, char *buf, int len)
+/**
+ * @fn void do_offset(struct tm const *tm, char *buf, int len)
  * @brief Tack on the UTC offset to a data/time timestamp.
  * The buffer must be at least 10 characters long to hold the longest
  * offset.
@@ -141,6 +143,11 @@ void log_format_timestamp(struct timespec *ts, SEC_PRECISION precision,
 	struct tm	tm;
 	char const *fmt = FMT_STRING_STD;
 	bool want_offset = false;
+
+	if (precision >= LOG_FMT_DELTA) {
+		log_format_delta(ts, precision, buf, len);
+		return;
+	}
 
 	if (precision & FMT_ISO) {
 		fmt = FMT_STRING_ISO;
@@ -429,3 +436,45 @@ int log_fmt_debug_tall(FILE *stream, int sequence, struct timespec *ts, int leve
 		date, log_labels[level].english,
 		syscall(__NR_gettid), thread_name, file, function, line, msg);
 }
+
+
+/**
+ * @fn int log_fmt_elapsed_time(FILE *, int, struct timespec *ts, int,
+ * const char *, const char *, int line, char *)
+ * @brief Use elapsed time as the timestamp.
+ *
+ * @param stream the output stream to write to
+ * @param sequence the sequence number of the message
+ * @param ts the struct timmespec timestamp
+ * @param level the log level to print
+ * @param file the name of the file to print
+ * @param function the name of the function to print
+ * @param line the line number to print
+ * @param msg the actual use message to print
+ * @return the number of characters written.
+ *
+ * The most appropriate clock to use for this purpose is CLOCK_MONOTONIC_RAW.
+ * If both output channels are being used, and the other is not using an
+ * elapsed time format, other clocks may be used. But the timestamp may
+ * occasionally "hiccup" because they do not guarantee monotonic behavior.
+ * ```{.c}
+ * log_select_clock(CLOCK_MONOTONIC_RAW);
+ * LOG_CHANNEL *ch = log_open_channel_s(stderr, LL_INFO, log_fmt_elapsed_time);
+ * ```
+ *
+ * Example output:
+ *```
+ *  0.000001665 INFO    formats.c:main:172 this message has elapsed time
+ *  0.000010344 INFO    formats.c:main:173 this message has elapsed time
+ *  0.000018740 INFO    formats.c:main:174 this message has elapsed time
+ *```
+ */
+int log_fmt_elapsed_time(FILE *stream, int sequence, struct timespec *ts, int level,
+    const char *file, const char *function, int line, char *msg) {
+    char date[TIMESTAMP_LEN];
+    log_format_timestamp(ts, LOG_FMT_DELTA, date, sizeof(date));
+    return fprintf(stream, "%s %-7s %s:%s:%d %s\n",
+        date, log_labels[level].english,
+        file, function, line, msg);
+}
+
