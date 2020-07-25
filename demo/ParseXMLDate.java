@@ -22,6 +22,10 @@ import java.util.List;
  *   runtimes and JAXB with the current DTD to produce a binding to read such
  *   files. It is used to extend the precision of the timestamp. It is appended
  *   to the millis value. Its range is 0 to 999999.
+ *
+ * - to run the ParseXMLDate.class file:
+ * $ java ParseXMLDate
+ *
  */
 
 public class ParseXMLDate {
@@ -41,9 +45,11 @@ public class ParseXMLDate {
 		 * to add to the milliseconds. It's range is from 0.000000000 to
 		 * 0.000999999 seconds.
 		 */
+		System.out.println("=== Fields copied from an xml record ===");
 		System.out.println("DATE:   " + dateWithOffset);
 		System.out.println("MILLIS: " + millis);
 		System.out.println("NANOS:  " + nanos);
+		System.out.println();
 
 		/*
 		 * Parse the date string using DateTimeFormatter.
@@ -53,6 +59,19 @@ public class ParseXMLDate {
 		TemporalAccessor isoOffsetDateTime =
 			DateTimeFormatter.ISO_DATE_TIME.parse(dateWithOffset);
 		System.out.println("Fully parsed: " + isoOffsetDateTime);
+
+		/*
+		 * Note that the nanos field added to the millis field agrees with
+		 * Seconds and Nanos extracted from the Date string
+		 *
+		 * MILLIS         NANOS
+		 * 1592582195_938 955247
+		 *
+		 * Seconds    Nanos
+		 * 1592582195 938_955247
+		 *
+		 * The date field also has the UTC offset, if that is needed.
+		 */
 
 		/*
 		 * print it out in different styles...
