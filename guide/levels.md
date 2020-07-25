@@ -9,19 +9,25 @@ expand to log_msg() function calls.
 
 macro | LL_XXX value | java level | java value | systemd macro | systemd output | text output
 ------|--------------|------------|------------|---------------|----------------|-------------
-log_emerg()   |  0 |         | 1300 | SD_EMERG   | <0> | EMERG 
-log_alert()   |  1 |         | 1200 | SD_ALERT   | <1> | ALERT 
-log_crit()    |  2 |         | 1100 | SD_CRIT    | <2> | CRIT 
-log_severe()  |  3 | SEVERE  | 1000 |            | <3> | ERR 
-log_err()     |  4 |         |  950 | SD_ERR     | <3> | ERR 
-log_warning() |  5 | WARNING |  900 | SD_WARNING | <4> | WARNING 
-log_notice()  |  6 |         |  850 | SD_NOTICE  | <5> | NOTICE 
-log_info()    |  7 | INFO    |  800 | SD_INFO    | <6> | INFO 
-log_config()  |  8 | CONFIG  |  700 |            | <6> | INFO 
-log_debug()   |  9 |         |  600 | SD_DEBUG   | <7> | DEBUG 
-log_fine()    | 10 | FINE    |  500 |            | <7> | FINE
-log_finer()   | 11 | FINER   |  400 |            | <7> | FINER
-log_finest()  | 12 | FINEST  |  300 |            | <7> | FINEST
+log_emerg()   |  0 |         | 1300 (1) | SD_EMERG   | <0> | EMERG 
+log_alert()   |  1 |         | 1200 (1) | SD_ALERT   | <1> | ALERT 
+log_crit()    |  2 |         | 1100 (1) | SD_CRIT    | <2> | CRIT 
+log_severe()  |  3 | SEVERE  | 1000     |            | <3> | SEVERE 
+log_err()     |  4 |         |  950 (1) | SD_ERR     | <3> | ERR 
+log_warning() |  5 | WARNING |  900     | SD_WARNING | <4> | WARNING 
+log_notice()  |  6 |         |  850 (1) | SD_NOTICE  | <5> | NOTICE 
+log_info()    |  7 | INFO    |  800     | SD_INFO    | <6> | INFO 
+log_config()  |  8 | CONFIG  |  700     |            | <6> | CONFIG 
+log_debug()   |  9 |         |  600 (1) | SD_DEBUG   | <7> | DEBUG 
+log_fine()    | 10 | FINE    |  500     |            | <7> | FINE
+log_finer()   | 11 | FINER   |  400     |            | <7> | FINER
+log_finest()  | 12 | FINEST  |  300     |            | <7> | FINEST
+
+NOTES:
+1. Where the level is not a standard Java one, the java value is
+interpolated or extrapolated.
+2. For systemd output, Java FINE, FINER, and FINEST are mapped to SD_DEBUG
+(<7>), CONFIG is mapped to SD_INFO (<6>), and SEVERE is mapped to SD_ERR (<3>).
 
 ### XML levels
 
@@ -77,6 +83,8 @@ It isn't like XML is the ideal human readable format. It is basically a
 pre-parsed format for use by an analysis tool.
 
 The output from that program:
+Notice the <level> elements are Java Level String values for standard java
+levels, and numeric values for systemd ones. 
 
 ```
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
@@ -239,9 +247,10 @@ The output from that program:
   <message>finest level</message>
 </record>
 </log>
-
 ```
-Re-read by a log reader:
+
+Re-read by a log reader: Notice that the standard java levels are recognized
+as expected, and the numeric ones are also accepted.
 
 ```
 Jun 15, 2020 5:01:15 PM xml-levels.c main
