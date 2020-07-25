@@ -46,14 +46,15 @@ TL_BEGIN_C_DECLS
  * Otherwise the supplied output * stream is used.
  */
 struct _logChannel {
-	LOG_LEVEL		level;		/**< the minimum level to log */
+	LOG_LEVEL	level;			/**< the minimum level to log */
 	log_formatter_t	formatter;	/**< the formatter to use */
-	char			*pathname;	/**< pathname of the file, if logging to file */
-	bool			line_buffered;	/**< line buffered if true */
-	FILE			*stream;	/**< the stream for output */
-	int				sequence;	/**< sequence number for structured streams (XML) */
-	void (*open_action)(void);	/**< open function for structured streams (XML) */
-	void (*close_action)(void);	/**< close function for structured streams (XML) */
+	char		*pathname;		/**< pathname of the file, if logging to file */
+	bool		line_buffered;	/**< line buffered if true */
+	FILE		*stream;		/**< the stream for output */
+	bool		wrap_records;	/**< enclose Json and XML in begin/end log info */
+	int			sequence;		/**< sequence number for structured streams (Json and XML) */
+	void (*open_action)(void);	/**< open function for structured streams (Json and XML) */
+	void (*close_action)(void);	/**< close function for structured streams (Json and XML) */
 };
 
 int log_do_xml_head(FILE *stream);
@@ -62,6 +63,8 @@ int log_do_json_head(FILE *stream);
 int log_do_json_tail(FILE *stream);
 void log_do_head(LOG_CHANNEL *);
 void log_do_tail(LOG_CHANNEL *);
+
+void timespec_diff(struct timespec *a, struct timespec *b, struct timespec *result);
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
 TL_END_C_DECLS
