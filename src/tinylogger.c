@@ -28,6 +28,7 @@
 #include <signal.h>
 #include <unistd.h>
 #include <errno.h>
+#include <linux/version.h>
 
 #include "tinylogger.h"
 #include "private.h"
@@ -49,6 +50,20 @@ static LOG_LEVEL pre_init_level = LL_INFO;
  * public for logrotate.c
  */
 pthread_mutex_t log_lock = PTHREAD_MUTEX_INITIALIZER;
+
+/**
+ * @struct log_config
+ * Parameters common to both channels.
+ */
+static struct log_config {
+	bool wrap_records;	/**< Include head/tail in XML/Json formats */
+	clockid_t clock_id;	/**< The clock used for timestamps */
+	struct timespec ts;	/**< The start time used for delta timestamp formats */
+} log_config = {
+	.wrap_records = true,
+	.clock_id = CLOCK_REALTIME,
+	.ts = {0}
+};
 
 /**
  * @fn void log_set_pre_init_level(LOG_LEVEL log_level)
@@ -96,6 +111,137 @@ static LOG_LEVEL log_constrain_level(LOG_LEVEL level) {
 }
 
 /**
+ * @fn log_select_clock(clockid_t clock_id)
+ * @brief Select the linux clock to use for timestamps.
+ *
+ * CLOCK_REALTIME, CLOCK_MONOTONIC, CLOCK_MONOTONIC_RAW, CLOCK_REALTIME_COARSE,
+ * and CLOCK_BOOTTIME are available, depending on kernel vesion.
+ *
+ * The start timestamp used by the elapsed time formatter is recorded using the
+ * selected clock. Both the timestamp and clock selection are common to both
+ * channels in order to make them relative to the same "t0".
+ *
+ * @return true if the requested clock_id is supported, false otherwise.
+ */
+bool log_select_clock(clockid_t clock_id) {
+	switch (clock_id) {
+		case CLOCK_REALTIME:
+		case CLOCK_MONOTONIC:
+		#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,28)
+		case CLOCK_MONOTONIC_RAW:
+		#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,32)
+		case CLOCK_REALTIME_COARSE:
+		case CLOCK_MONOTONIC_COARSE:
+		#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,39)
+		case CLOCK_BOOTTIME: {
+			log_config.clock_id = clock_id;
+			// get a timestamp
+			if (clock_gettime(log_config.clock_id, &log_config.ts) == 0) {
+			}
+		};
+		#endif
+		#endif
+		#endif
+	}
+	return log_config.clock_id == clock_id;
+}
+
+/**
+ * @fn void log_wrap_records(bool yes_no)
+ * @brief Emit opening and closing sequences for Json and XML logging.
+ * Both the Json and XML output can enclose the stream of message records
+ * in a "log" definition. Output can be constructed as a single log entity
+ * or object, or as a sequence of individual record entities or objects.
+ * This setting affects all channels in use,
+ * @param yes_no set to true to include the opening and closing sequences
+ * to construct a single log object.
+ */
+void log_wrap_records(bool yes_no) {
+	log_config.wrap_records = yes_no;
+}
+
+/**
+ * from <sys/time.h>
+ * used timersub macro, changed timeval to timespec
+ * kept the order of operands the same, that is a - b = result
+ */
+#define timespec_diff_macro(a, b, result)             \
+  do {                                                \
+    (result)->tv_sec = (a)->tv_sec - (b)->tv_sec;     \
+    (result)->tv_nsec = (a)->tv_nsec - (b)->tv_nsec;  \
+    if ((result)->tv_nsec < 0) {                      \
+      --(result)->tv_sec;                             \
+      (result)->tv_nsec += 1000000000;                \
+    }                                                 \
+  } while (0)
+
+/**
+ * @fn timespec_diff(struct timespec *, struct timespec *, struct timespec *)
+ * @brief Compute the diff of two timespecs, that is a - b = result.
+ * @param a the minuend
+ * @param b the subtrahend
+ * @param result a - b
+ */
+inline void timespec_diff(struct timespec *a, struct timespec *b,
+	struct timespec *result) {
+	result->tv_sec  = a->tv_sec  - b->tv_sec;
+	result->tv_nsec = a->tv_nsec - b->tv_nsec;
+	if (result->tv_nsec < 0) {
+		if (result->tv_sec >= 0) --result->tv_sec;
+		result->tv_nsec += 1000000000L;
+	}
+}
+
+/**
+ * @fn void log_format_delta(struct timespec *ts, SEC_PRECISION precision,
+ *  char *buf, int len)
+ * @brief Format the (struct timespec) ts in tb to an ascii string.
+ *
+ * The fractional seconds appended is specified by the SEC_PRECISION precision.
+ * - SP_NONE  no fraction is appended
+ * - SP_MILLI .nnn is appended
+ * - SP_MICRO .nnnnnn is appended
+ * - SP_NANO  .nnnnnnnnn is appended
+ *
+ * @param ts the previously obtained struct timespec timestamp.
+ * @param precision the precision of the fraction of second to display
+ * @param buf the buffer to format the timestamp to
+ * @param len the length of that buffer. Must be >= 30
+ */
+void log_format_delta(struct timespec *ts, SEC_PRECISION precision, char *buf, int len) {
+	struct timespec delta;
+	char seconds_buf[26];
+
+    if ((buf == NULL) || (len < TIMESTAMP_LEN)) {
+        fprintf(stderr,
+            "log_format_timestamp: internal error - provide %d char buf\n",
+                TIMESTAMP_LEN);
+        return;
+    }
+
+	timespec_diff(ts, &log_config.ts, &delta);
+
+	if (precision & LOG_FMT_HMS) {
+		long hours;
+		int minutes, seconds;
+		long off_remainder;
+
+		hours = delta.tv_sec / (60 *60);
+		off_remainder = delta.tv_sec % (60 * 60);
+		minutes = off_remainder / 60;
+		off_remainder = off_remainder % 60;
+		seconds = off_remainder;
+
+		snprintf(seconds_buf, sizeof(seconds_buf), "%ld:%02d:%02d",
+			hours, minutes, seconds);
+	} else {
+		snprintf(seconds_buf, sizeof(seconds_buf), "% 3ld", delta.tv_sec);
+	}
+
+	snprintf(buf, len, "%s.%09ld", seconds_buf, delta.tv_nsec);
+}
+
+/**
  * @fn int log_msg(int, const char *, const char *, const int,
  * const char *, ...)
  * @brief Log a message.
@@ -128,7 +274,7 @@ int log_msg(int level,
 	pthread_mutex_lock(&log_lock);
 
 	// get a timestamp
-	if (clock_gettime(CLOCK_REALTIME, &ts) == 0) {
+	if (clock_gettime(log_config.clock_id, &ts) == 0) {
 		// TODO: report error
 	}
 
@@ -172,6 +318,7 @@ unlock:
  * @param channel the channel to handle
  */
 void log_do_head(LOG_CHANNEL  *channel) {
+	if (!log_config.wrap_records) return;
 	if (channel->formatter == log_fmt_xml) {
 		log_do_xml_head(channel->stream);
 	} else if (channel->formatter == log_fmt_json) {
@@ -185,6 +332,7 @@ void log_do_head(LOG_CHANNEL  *channel) {
  * @param channel the channel to handle
  */
 void log_do_tail(LOG_CHANNEL  *channel) {
+	if (!log_config.wrap_records) return;
 	if (channel->formatter == log_fmt_xml) {
 		log_do_xml_tail(channel->stream);
 	} else if (channel->formatter == log_fmt_json) {
@@ -264,11 +412,18 @@ LOG_CHANNEL *log_open_channel_s(FILE *stream, LOG_LEVEL level,
 	channel->stream = stream;
 	channel->level = level;
 	channel->formatter = formatter;
+	channel->wrap_records = log_config.wrap_records;	// latch state
 
+	// for Json and XML
 	log_do_head(channel);
 
-	// user has set up at least one channel
-	configured = true;
+	// initialize the start time for delta time formats
+	if (!configured) {
+		log_select_clock(log_config.clock_id);
+		
+		// user has set up at least one channel
+		configured = true;
+	}
 
 	// success
 	results = channel;
@@ -345,16 +500,22 @@ LOG_CHANNEL *log_open_channel_f(char *pathname, LOG_LEVEL level,
 	// duplicate the pathname,
 	// record the stream, level, formatter, and line_bufferd status
 	channel->pathname = strdup(pathname);
+	channel->line_buffered = line_buffered;
 	channel->stream = file;
 	channel->level = level;
 	channel->formatter = formatter;
-	channel->line_buffered = line_buffered;
+	channel->wrap_records = log_config.wrap_records;	// latch state
 
-	// ejh xml
+	// for Json and XML
 	log_do_head(channel);
 
-	// user has set up at least one channel
-	configured = true;
+	// initialize the start time for delta time formats
+	if (!configured) {
+		log_select_clock(log_config.clock_id);
+		
+		// user has set up at least one channel
+		configured = true;
+	}
 
 	// success
 	results = channel;
@@ -416,7 +577,7 @@ unlock:
 
 /**
  * @fn int log_reopen_channel(LOG_CHANNEL *channel)
- * @brief Re-open a channel to support programatic logrotate.
+ * @brief Re-open a channel to support *programatic* logrotate.
  *
  * If the channel is a file based channel, the file is flushed and closed.
  * The file is then opened again with the same log level, formatter, and
@@ -434,6 +595,17 @@ unlock:
  *   - a new file with the original name is opened
  *   - logging is unlocked
  * - logging then resumes without any messages being lost
+ *
+ * ```
+ *    LOG_CHANNEL *ch1 = log_open_channel_f(LIVE_LOG_NAME, ...);
+ *    log_info(...);
+ *    log_info("this is the last message in the "archived file");
+ *    rename(LIVE_LOG_NAME, ARCHIVE_LOG_NAME);
+ *    // re-init the channel to the original pathname
+ *    log_reopen_channel(ch1);
+ *    log_info("this is the first message in the new live log file");
+ *
+ * ```
  *
  * @param channel The channel to re-open.
  * @return 0 on success
@@ -464,7 +636,7 @@ int log_reopen_channel(LOG_CHANNEL *channel) {
 		goto unlock;
 	}
 
-	// ejh xml
+	// for Json and XML
 	log_do_tail(channel);
 
 	// flush and close the current file
@@ -480,8 +652,9 @@ int log_reopen_channel(LOG_CHANNEL *channel) {
 		goto unlock;
 	}
 
-	// ejh xml
 	channel->sequence = 0;
+
+	// for Json and XML
 	log_do_head(channel);
 
 	// set line buffered output, if requested
@@ -534,7 +707,7 @@ int log_close_channel(LOG_CHANNEL *channel) {
 		goto unlock;
 	}
 
-	// ejh xml
+	// for Json and XML
 	log_do_tail(channel);
 
 	// If we are closing an existing file based config, that means we need to
