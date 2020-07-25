@@ -93,6 +93,12 @@ int log_fmt_custom_2(FILE *stream, int sequence, struct timespec *ts, int level,
 		file, function, line, msg);
 }
 
+/**
+ * @fn int main(void)
+ * @brief Demonstrate available formats.
+ *
+ * Also demonstrate creating custom formats, and use of elapsed time formats.
+ */
 int main(void) {
 	/*
 	 * Change main stderr format to systemd and add output to a file.
@@ -143,6 +149,36 @@ int main(void) {
 	log_change_params(ch1, LL_INFO, log_fmt_xml);
 	log_info("this message has excaped \"<xml>\", apostrophe also '");
 	log_info("this message has no escaped xml");
+
+	/*
+	 * Select CLOCK_MONOTONIC_RAW instead of CLOCK_REALTIME.
+	 * CLOCK_MONOTONIC_RAW is the most appropriate for this use.
+	 * Selecting a clock also resets the elapsed time.
+	 */
+	// The following reports 1 ns on my HP xw6600. I'm not sure what that
+	// actually means.
+	struct timespec resolution = {0};
+	clock_getres(CLOCK_MONOTONIC_RAW, &resolution);
+	log_change_params(ch1, LL_INFO, log_fmt_standard);
+	log_info("CLOCK_MONOTONIC_RAW resolution = %ld ns", resolution.tv_nsec);
+
+	// crude measurement of the time to write a message.
+	log_change_params(ch1, LL_INFO, log_fmt_elapsed_time);
+	log_select_clock(CLOCK_MONOTONIC_RAW);
+	log_info("this message has elapsed time");
+	log_info("this message has elapsed time");
+	log_info("this message has elapsed time");
+	log_info("this message has elapsed time");
+	log_info("this message has elapsed time");
+
+	// reset t0 - the elapsed time starts back at 0
+	log_info("reset t0");
+	log_select_clock(CLOCK_MONOTONIC_RAW);
+	log_info("this message has elapsed time");
+	log_info("this message has elapsed time");
+	log_info("this message has elapsed time");
+	log_info("this message has elapsed time");
+	log_info("this message has elapsed time");
 
 	log_done();
 
