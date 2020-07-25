@@ -6,13 +6,21 @@
 #define LOG_FILE "tinylogger.json"
 #define N_REPS 1
 
+/**
+ * @fn int main(void)
+ * @brief Short demo of the Json fromatter.
+ *
+ * The only escaping done is for the below mentioned characters.
+ */
 int main(void) {
 	/*
-	 * Print a series of xml formatted messages
-	 * Use the xml formatter
-	 * Use line buffered output
+	 * Print a series of json formatted messages
+	 * Use the json formatter
+	 * Turn off line buffered output. Json format would not typically be
+	 * monitored in a line by line manner. It would usually be a "bulk" storage
+	 * situation.
 	 */
-	LOG_CHANNEL *ch1 = log_open_channel_f(LOG_FILE, LL_INFO, log_fmt_json, true);
+	LOG_CHANNEL *ch1 = log_open_channel_f(LOG_FILE, LL_INFO, log_fmt_json, false);
 	(void) ch1;	// quiet the "unused variable" warning
 
 	for (int n = 0; n < N_REPS; n++) {
