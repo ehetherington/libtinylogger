@@ -9,7 +9,7 @@
  *  @author     Edward Hetherington
  */
 
-#include "config.h"
+//#include "config.h"
 
 #ifndef _TINYLOGGER_H
 #define _TINYLOGGER_H 1
@@ -93,7 +93,9 @@ typedef enum {
 	SP_NANO,				/**< .nnnnnnnnn              */
 	FMT_ISO = 16,			/**< 'T' instead of ' '      */
 	FMT_UTC_OFFSET = 32,	/**< add UTC offset "+00:00" */
-	} SEC_PRECISION;
+	LOG_FMT_DELTA = 64,	    /**< print an elapsed time   */
+	LOG_FMT_HMS = 128	    /**< elapsed time in H:M:S   */
+} SEC_PRECISION;
 
 struct _logChannel;
 /** Opaque */
@@ -101,6 +103,9 @@ typedef struct _logChannel LOG_CHANNEL;
 
 void log_set_pre_init_level(LOG_LEVEL log_level);
 LOG_LEVEL log_get_level(const char *label);
+
+/* select clock to use for timestamps */
+bool log_select_clock(clockid_t clock_id);
 
 /* channel control */
 LOG_CHANNEL *log_open_channel_s(FILE *, LOG_LEVEL, log_formatter_t);
@@ -121,11 +126,13 @@ int log_fmt_tall(FILE *, int, struct timespec *, int, const char *, const char *
 int log_fmt_debug_tid(FILE *, int, struct timespec *, int, const char *, const char *, int, char *);
 int log_fmt_debug_tname(FILE *, int, struct timespec *, int, const char *, const char *, int, char *);
 int log_fmt_debug_tall(FILE *, int, struct timespec *, int, const char *, const char *, int, char *);
+int log_fmt_elapsed_time(FILE *, int, struct timespec *, int, const char *, const char *, int, char *);
 int log_fmt_xml(FILE *, int, struct timespec *, int, const char *, const char *, int, char *);
 int log_fmt_json(FILE *, int, struct timespec *, int, const char *, const char *, int, char *);
 
-/* timestamp formatter for the formatters that include a timestamp */
+/* timestamp formatters for the formatters that include a timestamp */
 void log_format_timestamp(struct timespec *ts, SEC_PRECISION precision, char *buf, int len);
+void log_format_delta(struct timespec *ts, SEC_PRECISION precision, char *buf, int len);
 
 int log_enable_logrotate(int signal);
 
