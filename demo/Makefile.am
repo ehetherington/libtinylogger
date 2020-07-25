@@ -11,7 +11,8 @@ noinst_PROGRAMS = \
 	xml \
 	json \
 	xml-levels \
-	parse_time
+	parse_time \
+	clocks
 
 JAVAROOT = .
 dist_noinst_JAVA = ParseXMLDate.java
@@ -45,4 +46,10 @@ xml_levels_LDADD = ../src/libtinylogger.la
 
 parse_time_SOURCES = parse_time.c
 parse_time_LDADD = ../src/libtinylogger.la
+
+clocks_SOURCES = clocks.c
+clocks_LDADD = ../src/libtinylogger.la
+
+test_time_SOURCES = test-time.c
+test_time_LDADD = ../src/libtinylogger.la
 
