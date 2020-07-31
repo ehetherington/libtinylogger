@@ -1,0 +1,30 @@
+# This Makefile leverages the built in rule to build an executable
+# from a single source.
+
+TOP_SRCDIR = ..
+LIB_DIR = $(TOP_SRCDIR)/lib
+DEMO_LIB_DIR = $(TOP_SRCDIR)/demo-lib
+CPPFLAGS = -I../include -I../demo-lib -MMD -MP
+CFLAGS = -Wall -Werror -pedantic -pthread
+LDFLAGS = -lpthread
+LDLIBS = $(LIB_DIR)/libtinylogger.a $(DEMO_LIB_DIR)/libdemo.a
+
+# assume all source files are individual programs
+# If you want to have a multi-file program, all SRC/PROGRAMS must be
+# listed individually. Appropriate targets/rules must also be created.
+SRC := $(wildcard *.c)
+OBJ := $(SRC:%.c=%.o)
+PROGRAMS := $(SRC:%.c=%)
+
+CLEANEXTS = o d
+
+.PHONY: all clean
+
+# Default target
+all: $(PROGRAMS)
+
+clean:
+	for ext in $(CLEANEXTS); do rm -f *.$$ext; done
+	rm -f $(PROGRAMS)
+
+-include $(OBJ:.o=.d)

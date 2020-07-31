@@ -1,0 +1,36 @@
+
+TOP_SRCDIR = ..
+CPPFLAGS = -I../include -MMD -MP
+CFLAGS = -Wall -Werror -pedantic -pthread
+# anything linked to this library will need libpthread
+#LDFLAGS = -lpthread
+
+LIB_DIR = ../lib
+
+CLEANEXTS = o a d
+
+LIB_OBJS = \
+	tinylogger.o \
+	formatters.o \
+	json_formatter.o \
+	xml_formatter.o \
+	logrotate.o
+
+LIBRARY = libtinylogger.a
+
+.PHONY: all install clean
+
+# Default target
+all: $(LIBRARY)
+
+$(LIBRARY): $(LIB_OBJS)
+	ar ru $@ $^
+	ranlib $@
+
+install:
+	cp $(LIBRARY) $(LIB_DIR)
+
+clean:
+	for file in $(CLEANEXTS); do rm -f *.$$file; done
+
+-include $(LIB_OBJS:.o=.d)
