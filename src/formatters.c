@@ -272,7 +272,7 @@ int log_fmt_standard(FILE *stream, int sequence, struct timespec *ts, int level,
 /**
  * @fn int log_fmt_tall(FILE *, int, struct timespec *, int,
  * const char *, const char *, int, char *)
- * @brief Debug format with thread id added.
+ * @brief Standard format with thread id and name added.
  *
  * @param stream the output stream to write to
  * @param sequence the sequence number of the message
