@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # This script makes COPIES of the relevant sources in a tree representative
-# of typical setup.
+# of a typical setup.
 #
 # This script finds its location, and finds the relevant files relative to it.
 #
