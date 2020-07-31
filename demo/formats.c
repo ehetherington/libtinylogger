@@ -16,6 +16,7 @@
 /**
  * @fn int log_fmt_custom_1(FILE *, struct timespec *, int,
  * const char *, const char *, int, char *)
+ *
  * @brief Output messages with a CUSTOM format.
  *
  * Use another familiar date/time format. Has thread id and thread name. Note
@@ -61,6 +62,7 @@ int log_fmt_custom_1(FILE *stream, int sequence, struct timespec *ts, int level,
 /**
  * @fn int log_fmt_custom_2(FILE *, struct timespec *, int,
  * const char *, const char *, int, char *)
+ *
  * @brief Output messages with a CUSTOM format.
  *
  * Use another familiar date/time format. The debug info of file/function/line
@@ -95,9 +97,12 @@ int log_fmt_custom_2(FILE *stream, int sequence, struct timespec *ts, int level,
 
 /**
  * @fn int main(void)
+ *
  * @brief Demonstrate available formats.
  *
  * Also demonstrate creating custom formats, and use of elapsed time formats.
+ *
+ * See src/formatters.c for all available formats.
  */
 int main(void) {
 	/*
@@ -107,27 +112,27 @@ int main(void) {
 	 * set format to debug
 	 * turn line buffering on (useful with tail -f, for example)
 	 */
-	LOG_CHANNEL *ch1;
+	LOG_CHANNEL *ch;
 
-	ch1 = log_open_channel_s(stderr, LL_INFO, log_fmt_basic);
+	ch = log_open_channel_s(stderr, LL_INFO, log_fmt_basic);
 	log_info("this message uses the basic format");
 
-	log_change_params(ch1, LL_INFO, log_fmt_systemd);
+	log_change_params(ch, LL_INFO, log_fmt_systemd);
 	log_info("this message uses the systemd format");
 
-	log_change_params(ch1, LL_INFO, log_fmt_standard);
+	log_change_params(ch, LL_INFO, log_fmt_standard);
 	log_info("this message uses the standard format");
 
-	log_change_params(ch1, LL_INFO, log_fmt_debug);
+	log_change_params(ch, LL_INFO, log_fmt_debug);
 	log_info("this message uses the debug format");
 
-	log_change_params(ch1, LL_INFO, log_fmt_debug_tid);
+	log_change_params(ch, LL_INFO, log_fmt_debug_tid);
 	log_info("this message uses the debug_tid format");
 
-	log_change_params(ch1, LL_INFO, log_fmt_debug_tname);
+	log_change_params(ch, LL_INFO, log_fmt_debug_tname);
 	log_info("this message uses the debug_tname format");
 
-	log_change_params(ch1, LL_INFO, log_fmt_debug_tall);
+	log_change_params(ch, LL_INFO, log_fmt_debug_tall);
 	log_info("this message uses the debug_tall format");
 
 	// Set the locale for the date to respond to the locale set in the
@@ -137,18 +142,32 @@ int main(void) {
 	// $ LC_ALL=es_ES ./formats
 	setlocale(LC_ALL, "");
 
-	log_change_params(ch1, LL_INFO, log_fmt_custom_1);
+	log_change_params(ch, LL_INFO, log_fmt_custom_1);
 	log_info("this message uses a CUSTOM format");
 
 	// explicitely set the locale
 	setlocale(LC_ALL, "es_ES");
 
-	log_change_params(ch1, LL_INFO, log_fmt_custom_2);
+	log_change_params(ch, LL_INFO, log_fmt_custom_2);
 	log_info("this message uses a another CUSTOM format");
 
-	log_change_params(ch1, LL_INFO, log_fmt_xml);
-	log_info("this message has excaped \"<xml>\", apostrophe also '");
+	// NOTE: the xml and json messages will be emitted as individual messages,
+	// not enclosed in the Log prologue and epilogue.
+	// Use of log_change_params() with those formats is not recommended.
+	log_change_params(ch, LL_INFO, log_fmt_xml);
+	log_info("this message has escaped \"<xml>\", apostrophe also '");
 	log_info("this message has no escaped xml");
+
+	// recommended usage (sort of)
+	// This will print the prolog and epilog, but it will be in the middle of
+	// non-json messages.
+	log_close_channel(ch);
+	ch = log_open_channel_s(stderr, LL_INFO, log_fmt_json);
+	log_change_params(ch, LL_INFO, log_fmt_json);
+	log_info("this message is using json");
+	log_close_channel(ch);
+
+	log_open_channel_s(stderr, LL_INFO, log_fmt_standard);
 
 	/*
 	 * Select CLOCK_MONOTONIC_RAW instead of CLOCK_REALTIME.
@@ -159,11 +178,12 @@ int main(void) {
 	// actually means.
 	struct timespec resolution = {0};
 	clock_getres(CLOCK_MONOTONIC_RAW, &resolution);
-	log_change_params(ch1, LL_INFO, log_fmt_standard);
+	log_change_params(ch, LL_INFO, log_fmt_standard);
 	log_info("CLOCK_MONOTONIC_RAW resolution = %ld ns", resolution.tv_nsec);
 
-	// crude measurement of the time to write a message.
-	log_change_params(ch1, LL_INFO, log_fmt_elapsed_time);
+	// Elapsed time formats can even be used as a crude measurement of code
+	// execution time.
+	log_change_params(ch, LL_INFO, log_fmt_elapsed_time);
 	log_select_clock(CLOCK_MONOTONIC_RAW);
 	log_info("this message has elapsed time");
 	log_info("this message has elapsed time");
@@ -171,7 +191,7 @@ int main(void) {
 	log_info("this message has elapsed time");
 	log_info("this message has elapsed time");
 
-	// reset t0 - the elapsed time starts back at 0
+	// log_select_clock also resets t0 - the elapsed time starts back at 0
 	log_info("reset t0");
 	log_select_clock(CLOCK_MONOTONIC_RAW);
 	log_info("this message has elapsed time");
