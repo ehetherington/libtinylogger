@@ -2,16 +2,26 @@ AM_CPPFLAGS = -I$(top_srcdir)/src
 AM_CFLAGS = -Wall -Wpedantic -Werror
 AM_LDFLAGS = -static -lpthread
 
+COMMON_LIBS = ../src/libtinylogger.la libdemo.a
+
+noinst_LIBRARIES = libdemo.a
+
+libdemo_a_SOURCES = \
+	demo-utils.h \
+	demo-utils.c
+#libdemo_a_CFLAGS = 
+
 noinst_PROGRAMS = \
 	hello_world \
-	second formats \
+	second \
+	formats \
+	levels \
 	threads \
-	demo \
 	beehive \
 	xml \
 	json \
 	xml-levels \
-	parse_time \
+	logrotate \
 	clocks
 
 JAVAROOT = .
@@ -26,30 +36,27 @@ second_LDADD = ../src/libtinylogger.la
 formats_SOURCES = formats.c
 formats_LDADD = ../src/libtinylogger.la
 
-demo_SOURCES = demo.c
-demo_LDADD = ../src/libtinylogger.la
-
 threads_SOURCES = threads.c
-threads_LDADD = ../src/libtinylogger.la
+threads_LDADD = $(COMMON_LIBS)
+
+logrotate_SOURCES = logrotate.c
+logrotate_LDADD = $(COMMON_LIBS)
 
 beehive_SOURCES = beehive.c
-beehive_LDADD = ../src/libtinylogger.la
+beehive_LDADD = $(COMMON_LIBS)
 
 xml_SOURCES = xml.c
-xml_LDADD = ../src/libtinylogger.la
+xml_LDADD = $(COMMON_LIBS)
 
 json_SOURCES = json.c
-json_LDADD = ../src/libtinylogger.la
+json_LDADD = $(COMMON_LIBS)
+
+levels_SOURCES = levels.c
+levels_LDADD = ../src/libtinylogger.la
 
 xml_levels_SOURCES = xml-levels.c
 xml_levels_LDADD = ../src/libtinylogger.la
 
-parse_time_SOURCES = parse_time.c
-parse_time_LDADD = ../src/libtinylogger.la
-
 clocks_SOURCES = clocks.c
 clocks_LDADD = ../src/libtinylogger.la
-
-test_time_SOURCES = test-time.c
-test_time_LDADD = ../src/libtinylogger.la
 
