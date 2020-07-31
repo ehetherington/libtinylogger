@@ -53,7 +53,7 @@ TL_BEGIN_C_DECLS
 
 /**
  * Merge the definitions in <systemd/sd-daemon.h> and java.util.logging.
- * Add convenience values of LL_OFF and LL_ALL.
+ * Add convenience values of LL_OFF and LL_ALL ala java.util.logging.Level.
  */
 typedef enum log_level {
 	LL_INVALID = -2, LL_OFF = -1,
