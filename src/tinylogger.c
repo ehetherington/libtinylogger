@@ -352,15 +352,15 @@ void log_do_tail(LOG_CHANNEL  *channel) {
  * output. The fact that logging had been configured is remembered.
  */
 void log_done(void) {
+	// stop the logrotate support
+	log_enable_logrotate(0);
+
 	// disable all log_channels
 	// if a channel was file based, flush and close it
 	LOG_CHANNEL  *log_ch = (LOG_CHANNEL *) log_channels;
 	for (int n = 0; n < LOG_CH_COUNT; n++, log_ch++) {
 		log_close_channel(log_ch);
 	}
-
-	// stop the logrotate support
-	log_enable_logrotate(0);
 }
 
 /**
