@@ -33,6 +33,7 @@ It may be compiled directly with a target program, or installed as a library.
    - [standard](#standard)
    - [debug](#debug)
    - [XML](#xml)
+   - [Json](#json)
 4. [Example Output](#example-output)
    - [Two stream output](#two-stream-output)
    - [Custom formats](#custom-formats)
@@ -214,6 +215,45 @@ Output messages in java.util.logging.XMLFormatter format.
   <thread>1002084</thread>
   <message>This message uses the &quot;&lt;xml&gt;&quot; format. It&apos;s msg #2.</message>
 </record>
+```
+### Json <a name="json">
+Output message in json format.
+
+-- Example:
+```
+{
+  "records" : [  {
+    "isoDateTime" : "2020-07-31T15:12:56.408789290-04:00",
+    "timespec" : {
+      "sec" : 1596222776,
+      "nsec" : 408789290
+    },
+    "sequence" : 1,
+    "logger" : "tinylogger",
+    "level" : "INFO",
+    "file" : "json-hello.c",
+    "function" : "main",
+    "line" : 32,
+    "threadId" : 164933,
+    "threadName" : "json-hello",
+    "message" : "hello world (msg 0)"
+  },  {
+    "isoDateTime" : "2020-07-31T15:12:56.408893063-04:00",
+    "timespec" : {
+      "sec" : 1596222776,
+      "nsec" : 408893063
+    },
+    "sequence" : 2,
+    "logger" : "tinylogger",
+    "level" : "INFO",
+    "file" : "json-hello.c",
+    "function" : "main",
+    "line" : 32,
+    "threadId" : 164933,
+    "threadName" : "json-hello",
+    "message" : "hello world (msg 1)"
+  } ]
+}
 ```
 
 ## Example Output <a name="example-output"/>
