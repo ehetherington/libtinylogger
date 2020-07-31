@@ -2,6 +2,7 @@
 #include <unistd.h>
 
 #include "tinylogger.h"
+#include "demo-utils.h"
 
 #define LOG_FILE "tinylogger.json"
 #define N_REPS 1
@@ -13,6 +14,10 @@
  * The only escaping done is for the below mentioned characters.
  */
 int main(void) {
+
+    // check if the file already exists
+    check_append(LOG_FILE);
+
 	/*
 	 * Print a series of json formatted messages
 	 * Use the json formatter
