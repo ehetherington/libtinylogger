@@ -23,60 +23,51 @@ It may be compiled directly with a target program, or installed as a library.
   - Raspian Buster 4.19.97-v7l+
 
 ## Table of contents
-1. [Dependancies](#dependancies)
-2. [Installation](#installation)
-3. [Usage](#usage)
+1. [Getting Started](#getting_started)
+2. [Examples](#examples)
    - [Hello world](#hello-world)
    - [Two streams](#two-streams)
-4. [Output formats](#output-formats)
+3. [Output formats](#output-formats)
    - [basic](#basic)
    - [systemd](#systemd)
    - [standard](#standard)
    - [debug](#debug)
    - [XML](#xml)
-5. [Example Output](#example-output)
+4. [Example Output](#example-output)
    - [Two stream output](#two-stream-output)
    - [Custom formats](#custom-formats)
-6. [Additional Information](guide/guide.md)
+5. [Additional Information](guide/guide.md)
 
-## Dependancies <a name="dependancies"></a>
-- sd-daemon.h That header can be found in a systemd development package. On
-  RHEL8, it can be found in systemd-devel. On Raspbian it can be found in libsystemd-dev.
+## Getting started <a name="getting_started"></a>
+### Quick Start
+There is a directory set up with a minimum build environment called
+quick-start.
+```
+$ cd quick-start
+$ ./setup.sh
+$ make
+```
+This builds a static library called libtinylogger.a which can be linked to your
+project. It also builds the examples, which demonstrate different features of
+the library.
 
-- Building the docs is optional. If you want to build the docs, There is a
-  [guide](guide/doxygen.md) for installing doxygen on RHEL8 and Raspbian.
-
-## Installation <a name="installation"></a>
 ### Installation as a library is optional
 This is an Autotools package. For installation into /usr/local/lib,
-installation is very easy.
+installation is very easy. To give it a test drive, 
 
-	$ autoreconf -i
-	$ ./configure
-	$ make
-	$ sudo make install
+```
+$ autoreconf -i
+$ ./configure
+$ make
+$ DESTDIR=/tmp/destdir make install
+```
 
-libtinylogger static and dynamic librarys will be installed in /usr/local/lib
-and the header file will be installed into /usr/local/include.
+libtinylogger static and dynamic librarys will be installed in $DESTDIR/usr/local/lib
+and the header file will be installed into $DESTDIR/usr/local/include.
 
 If you have doxygen, man pages can be made and installed into /usr/local/man.
 
-## Usage <a name="usage"></a>
-The following usage examples assume installation as a library.
-
-The source files 
-[tinylogger.c](src/tinylogger.c)
-[tinylogger.h](src/tinylogger.h)
-[formatters.c](src/formatters.c)
-[json_formatter.c](src/json_formatter.c)
-[xml_formatter.c](src/xml_formatter.c)
-[logrotate.c](src/logrotate.c)
-[private.h](src/private.h)
-may alternatively be compiled and linked directly to your program.
-
-tinylogger.c, tinylogger.h, formatters.c, json_formatter,c, xml_formatter.c
-logrotate.c and private.h have been documented with doxygen flavored comments.
-
+## Examples <a name="examples"></a>
 ### The obligatory minimal program would be: <a name="hello-world"></a>
 
 Source code: [hello_world.c](demo/hello_world.c)
@@ -156,13 +147,6 @@ The output to /tmp/second.log would be:
     2020-05-30 19:22:11.541 INFO    second.c:main:15 this message will be printed to both
     2020-05-30 19:22:11.541 DEBUG   second.c:main:16 this message will be printed to file only
 ~~~
-
-### More complete demo
-A demo program [demo.c](demo/demo.c) is provided to demonstrate
-the features available. To compile and run it:
-
-	$ gcc -o test-logger test-logger.c -pthread -lpthread -ltinylogger
-	$ ./test-logger
 
 ## Pre-configured output formats available <a name="output-formats"/>
 Based on the output format selected by the user, a use of log_debug() will
