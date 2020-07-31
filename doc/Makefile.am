@@ -1,4 +1,4 @@
-EXTRA_DIST = fix_links.awk fix_guide.sh
+EXTRA_DIST = fix_links.awk
 
 CLEANFILES = docs cpmarkdown fixmarkdown markdown *.md
 
