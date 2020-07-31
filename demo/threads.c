@@ -10,28 +10,30 @@
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/syscall.h>
+#include <sys/prctl.h>
+#include <fcntl.h>
 
 #include <tinylogger.h>
-
-// from kernel/sched.h
-#define TASK_COMM_LEN 16
-#define NAME_LEN TASK_COMM_LEN	// includes null termination
+#include "demo-utils.h"
 
 #define N_THREADS 5
 
+#define NAME_LEN TASK_COMM_LEN
 static char thread_names[N_THREADS][NAME_LEN];
 
-#define errExitEN(en, msg) \
-	do { errno = en; perror(msg); exit(EXIT_FAILURE); \
-	} while (0)
-
+/**
+ * @fn void *threadFunc(void *parm)
+ * @brief A thread that periodically emits log messages
+ * @param parm a buffer to share parameters between the main thread and the
+ * child
+ * @return NULL
+ */
 static void *threadFunc(void *parm) {
 	pthread_t thread = pthread_self();
 	//pthread_id_np_t tid_np = pthread_gettreadid_np();
 	//pid_t tid = gettid();
-	pid_t tid = syscall(__NR_gettid);
+	pid_t tid = syscall(__NR_gettid);	// or SYS_gettid
 
-	char thread_name[NAME_LEN];
 	int rc;
 
 	char *name;
@@ -48,21 +50,49 @@ static void *threadFunc(void *parm) {
 
 	usleep(1000);
 
-	rc = pthread_getname_np(thread, thread_name, sizeof(thread_name));
-	if (rc != 0)
-		errExitEN(rc, "pthread getname");
-
-	for (int n = 0; n < 10; n++) {
-		log_info("hello from %s (%d)", thread_name, tid);
-		sleep(1);
+	for (int n = 0; n < 5; n++) {
+		log_info("hello from %s (%d)", name, tid);
+		sleep(2);
 	}
+	sleep(2);
 	return NULL;
 }
 
+/**
+ * @fn int main(void)
+ *
+ * @brief There are a few log formats that display thread id and/or name.
+ *
+ * Thread id formats use the linux thread id, not the posix pthread_t.
+ *
+ * The linux thread id is used instead of the posix pthread_t because it is
+ * more visible from outside the process. The ps command referred to below may
+ * be used to get thread status. The command expected is the command basename,
+ * possibly truncated to 15 bytes.
+ *
+ * get_proc_comm() is an example routine in demo-utils.c that gets the proper name.
+ *
+ * Try renaming the thread binary to thread-verylongcommandname and running
+ * that. The proper command to use will be displayed.
+ *
+ * This demo is best run in two command windows.
+ *
+ * Observe that the thread names and ids in the messages match those added by
+ * the message formatter and those produced by the ps command.
+ *
+ * Thread info for child threads is also available through the /proc/$(PID)/task
+ * subdirectory. 
+ * 
+ * @return 0 on success
+ */
 int main(void) {
-	pthread_t thread;
+	pthread_t threads[N_THREADS];
 	int rc;
-	char thread_name[NAME_LEN];
+	char command[128];
+
+	// get the comm name to match "ps H -C comm ..."
+	// remember to free it...
+	char *proc_comm = get_proc_comm();
 
 	LOG_CHANNEL *ch1 = log_open_channel_s(stderr, LL_INFO, log_fmt_debug_tall);
 
@@ -71,24 +101,31 @@ int main(void) {
 		exit(EXIT_FAILURE);
 	}
 
+	snprintf(command, sizeof(command), "ps H -C %s -o 'pid tid cmd comm'" , proc_comm);
+
 	for (int n = 0; n < N_THREADS; n++) {
 		snprintf(thread_names[n], NAME_LEN, "thread_%d", n);
 
-		rc = pthread_create(&thread, NULL, threadFunc, thread_names[n]);
+		rc = pthread_create(&threads[n], NULL, threadFunc, thread_names[n]);
 		if (rc != 0)
 			errExitEN(rc, "pthread create");
-
-		rc = pthread_getname_np(thread, thread_name, sizeof(thread_name));
-		if (rc != 0)
-			errExitEN(rc, "pthread getname");
 	}
 
-	log_info("use the following command: %s", "ps H -C threads -o 'pid tid cmd comm'");
-
+	// the threads run for 10 seconds and sleep for 2 seconds
+	// catch them while they are still running
 	sleep(10);
+	printf("output of %s\n", command);
+	system(command);
 
-	// TODO: wait for the threads to finish! (see beehive.c)
+	// join all threads to reclaim memory
+	for (int n = 0; n < N_THREADS; n++) {
+		pthread_join(threads[n], NULL);
+	}
+
+	// flush and close all channels and reclaim any memory
 	log_done();
 
-	return 0;
+	free(proc_comm);
+
+	return EXIT_SUCCESS;
 }
