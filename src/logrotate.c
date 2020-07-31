@@ -114,6 +114,7 @@ static void *log_sighandler(void *config) {
 	}
 
 	// done
+	/*********
 	pthread_mutex_lock(&log_lock);
 	ch = (LOG_CHANNEL *) log_channels;
 	for (int n = 0; n < LOG_CH_COUNT; n++, ch++) {
@@ -124,6 +125,7 @@ static void *log_sighandler(void *config) {
 		}
 	}
 	pthread_mutex_unlock(&log_lock);
+	**********/
 
 	return NULL;
 }
@@ -151,11 +153,13 @@ int log_enable_logrotate(int signal) {
 
 	// TODO: check correct way to see if a thread actually exists and is
 	// still running. Set thread to 0 after successfull wait?
-	if ((signal == 0) && rotate_config.thread_running) {
-		pthread_kill(rotate_config.log_thread, rotate_config.signal);
-		pthread_join(rotate_config.log_thread, NULL);
+	if (signal == 0) {
+		if (rotate_config.thread_running) {
+			pthread_kill(rotate_config.log_thread, rotate_config.signal);
+			pthread_join(rotate_config.log_thread, NULL);
 
-		rotate_config.thread_running = false;
+			rotate_config.thread_running = false;
+		}
 		return 0;
 	}
 
