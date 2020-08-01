@@ -18,13 +18,13 @@ PROGRAMS := $(SRC:%.c=%)
 
 CLEANEXTS = o d
 
-.PHONY: all clean
-
 # Default target
 all: $(PROGRAMS)
 
 clean:
 	for ext in $(CLEANEXTS); do rm -f *.$$ext; done
 	rm -f $(PROGRAMS)
+
+.PHONY: all clean
 
 -include $(OBJ:.o=.d)

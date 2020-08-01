@@ -1,6 +1,4 @@
 
-.PHONY: all logger demo-lib examples
-
 all: examples
 
 logger:
@@ -19,4 +17,4 @@ clean:
 	$(MAKE) -C examples clean
 	rm -f lib/libtinylogger.a
 
-.PHONY: logger examples clean
+.PHONY: all logger demo-lib examples clean

@@ -12,8 +12,6 @@ LIB_OBJS = \
 
 LIBRARY = libdemo.a
 
-.PHONY: all install clean
-
 # Default target
 all: $(LIBRARY)
 
@@ -26,5 +24,7 @@ $(LIBRARY): $(LIB_OBJS)
 
 clean:
 	for file in $(CLEANEXTS); do rm -f *.$$file; done
+
+.PHONY: all install clean
 
 -include $(LIB_OBJS:.o=.d)
