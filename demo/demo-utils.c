@@ -38,7 +38,7 @@ void check_append(char *filename) {
 		char c;
 		printf("%s exists, enter:\n", filename);
 		printf("  a to append to it\n");
-		printf("  r to remove it\n");
+		printf("  r to overwrite it\n");
 		printf("  q or Ctl-c to exit\n");
 		scanf(" %c",&c); c = tolower(c);
 
