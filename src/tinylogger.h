@@ -37,6 +37,8 @@
 #define log_finer(...)   log_msg(LL_FINER, __FILE__, __func__, __LINE__, __VA_ARGS__) /**< finer */
 #define log_finest(...)  log_msg(LL_FINEST, __FILE__, __func__, __LINE__, __VA_ARGS__) /**< finest */
 
+#define log_memory(level, ptr, len, ...)  log_mem((level), (ptr), (len), __FILE__, __func__, __LINE__, __VA_ARGS__) /**< hex dump */
+
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
 #if defined __cplusplus
 # define TL_BEGIN_C_DECLS   extern "C" {
@@ -112,6 +114,9 @@ LOG_CHANNEL *log_open_channel_s(FILE *, LOG_LEVEL, log_formatter_t);
 LOG_CHANNEL *log_open_channel_f(char *, LOG_LEVEL, log_formatter_t, bool);
 int log_msg(int level, const char *file, const char *function,
 	const int line, const char *format, ...);
+int log_mem(int const level, void const * const mem, int const len,
+	char const *file, char const *function, int const line,
+	char const *format, ...);
 int log_change_params(LOG_CHANNEL *, LOG_LEVEL, log_formatter_t);
 int log_reopen_channel(LOG_CHANNEL *);
 int log_close_channel(LOG_CHANNEL *);

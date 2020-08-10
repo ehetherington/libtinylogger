@@ -33,6 +33,13 @@
 #include "tinylogger.h"
 #include "private.h"
 
+/**
+ * 0 = unlimited - uses asprintf
+ */
+#ifndef MAX_MSG_SIZE
+#define MAX_MSG_SIZE BUFSIZ
+#endif
+
 /*
  * configured is false at startup, and set true when the user configures a
  * channel. It is never cleared. It is used to route messages that come by
@@ -242,8 +249,10 @@ void log_format_delta(struct timespec *ts, SEC_PRECISION precision, char *buf, i
 }
 
 /**
- * @fn int log_msg(int, const char *, const char *, const int,
- * const char *, ...)
+ * @fn int log_msg(int,
+ *     const char *, const char *, const int,
+ *     const char *, ...)
+ *
  * @brief Log a message.
  *
  * This is the actual logging function. The convenience log_xxx() macros
@@ -255,14 +264,18 @@ void log_format_delta(struct timespec *ts, SEC_PRECISION precision, char *buf, i
  * @param line_number the line number of the line of code (debug format)
  * @param format the printf format string (required)
  * @param ... the arguments to the format string
+ *
  * @return 0 on success, -1 if the format was NULL
- * there was output.
  */
 int log_msg(int level,
 	const char *file, const char *function, const int line_number,
 	const char *format, ...) {
 	va_list	args;
-	char	msg[256];		// user message
+#if MAX_MSG_SIZE == 0
+	char *msg;
+#else
+	char	msg[MAX_MSG_SIZE];		// user message
+#endif
 	struct timespec ts;
 
 	// make sure we have something to log
@@ -280,7 +293,11 @@ int log_msg(int level,
 
 	/* format the user message contents */
 	va_start(args, format);
-	vsnprintf(msg , sizeof(msg), format, args);
+#if MAX_MSG_SIZE == 0
+	vasprintf(&msg, format, args);
+#else
+	vsnprintf(msg, sizeof(msg), format, args);
+#endif
 	va_end(args);
 
 	// if the log_channels have not been configured,
@@ -308,8 +325,69 @@ int log_msg(int level,
 	// unlock
 unlock:
 	pthread_mutex_unlock(&log_lock);
+#if MAX_MSG_SIZE == 0
+	free(msg);
+#endif
 
 	return 0;	// success
+}
+
+
+/**
+ * @fn int log_mem(int const, void const * const, int const,
+ *     char const * const, char const *, int const,
+ *     char const * const, ...)
+ *
+ * @brief Format a region of memory to hex, and log it preceeded with a user
+ *        message.
+ *
+ * This function is intended to be called with the log_memory() macro. See
+ * tinylogger.h for its definitions.
+ *
+ * @param level the log level
+ * @param buf address of the memory region
+ * @param len length of the memory region
+ * @param file the name of the file of the calling statement
+ * @param function the name of the function of the calling statement
+ * @param line_number the line number of the calling statement
+ * @param format the printf format specifier
+ *
+ * @return 0 on success, -1 otherwise
+ */
+int log_mem(int const level, void const * const buf, int const len,
+	char const *file, char const *function, int const line_number,
+	char const *format, ...) {
+	va_list	args;
+#if MAX_MSG_SIZE == 0
+	char *msg;
+#else
+	char	msg[MAX_MSG_SIZE];		// user message
+#endif
+
+	/* format the memory region */
+	char *hex = hexformat(buf, len);
+	if (hex == NULL) return -1;
+
+	/* format the user message contents */
+	va_start(args, format);
+#if MAX_MSG_SIZE == 0
+	vasprintf(&msg, format, args);
+#else
+	vsnprintf(msg, sizeof(msg), format, args);
+#endif
+	va_end(args);
+
+	// separate the message from the dump with a newline
+	int status =
+		log_msg(level, file, function, line_number, "%s\n%s", msg, hex);
+
+#if MAX_MSG_SIZE == 0
+	free(msg);
+#endif
+
+	free(hex);
+
+	return status;
 }
 
 /**

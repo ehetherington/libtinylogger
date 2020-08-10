@@ -65,6 +65,7 @@ void log_do_head(LOG_CHANNEL *);
 void log_do_tail(LOG_CHANNEL *);
 
 void timespec_diff(struct timespec *a, struct timespec *b, struct timespec *result);
+char *hexformat (void const * const addr, size_t const len);
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
 TL_END_C_DECLS

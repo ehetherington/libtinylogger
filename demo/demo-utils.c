@@ -38,14 +38,14 @@ void check_append(char *filename) {
 		char c;
 		printf("%s exists, enter:\n", filename);
 		printf("  a to append to it\n");
-		printf("  r to overwrite it\n");
+		printf("  o to overwrite it\n");
 		printf("  q or Ctl-c to exit\n");
 		scanf(" %c",&c); c = tolower(c);
 
 		switch (c) {
 			case 'a': printf("appending to %s\n", filename); return;
 			case 'q': printf("quitting\n"); exit(EXIT_SUCCESS);
-			case 'r': {
+			case 'o': {
 				printf("deleting current %s, starting a new one\n", filename);
 				int status = remove(filename);
 				if (status != 0) {

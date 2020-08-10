@@ -1,6 +1,11 @@
 EXTRA_DIST = logrotate.service alternatives/sd-daemon.h
 
 AM_CFLAGS = -Wall -Wpedantic -Werror
+AM_CPPFLAGS =
+
+if SET_MAX_MSG_SIZE
+AM_CPPFLAGS += -DMAX_MSG_SIZE=$(MAX_MSG_SIZE)
+endif
 
 lib_LTLIBRARIES = libtinylogger.la
 include_HEADERS = tinylogger.h
@@ -11,7 +16,9 @@ libtinylogger_la_SOURCES = \
 	formatters.c \
 	xml_formatter.c \
 	json_formatter.c \
-	logrotate.c
+	logrotate.c \
+	hexformat.c
+
 libtinylogger_la_CFLAGS = -pthread $(AM_CFLAGS)
 libtinylogger_la_LDFLAGS = -version-info 0:0:0
 

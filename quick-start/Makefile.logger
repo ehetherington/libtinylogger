@@ -14,7 +14,8 @@ LIB_OBJS = \
 	formatters.o \
 	json_formatter.o \
 	xml_formatter.o \
-	logrotate.o
+	logrotate.o \
+	hexformat.o
 
 LIBRARY = libtinylogger.a
 

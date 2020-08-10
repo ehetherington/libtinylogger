@@ -14,9 +14,10 @@
  * The only escaping done is for the below mentioned characters.
  */
 int main(void) {
-
-    // check if the file already exists
-    check_append(LOG_FILE);
+	/*
+	 * check if the file already exists
+	 */
+	check_append(LOG_FILE);
 
 	/*
 	 * Print a series of json formatted messages
@@ -37,6 +38,16 @@ int main(void) {
 		log_info("\" quotes are escaped for Json output", n);
 		log_info("\\ backslashes are escaped for Json output", n);
 	}
+
+	/*
+	 * Throw in a memory dump
+	 */
+	char buf[256];
+
+	for (int n = 0; n < sizeof(buf); n++) {
+		buf[n] = n;
+	}
+	log_memory(LL_INFO, buf, sizeof(buf), "hello, %s", "world");
 
 	log_done();
 

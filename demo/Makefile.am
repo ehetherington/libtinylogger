@@ -22,13 +22,17 @@ noinst_PROGRAMS = \
 	json \
 	xml-levels \
 	logrotate \
-	clocks
+	clocks \
+	log_mem
 
 JAVAROOT = .
 dist_noinst_JAVA = ParseXMLDate.java
 
 hello_world_SOURCES = hello_world.c
 hello_world_LDADD = ../src/libtinylogger.la
+
+log_mem_SOURCES = log_mem.c
+log_mem_LDADD = ../src/libtinylogger.la
 
 second_SOURCES = second.c
 second_LDADD = ../src/libtinylogger.la
