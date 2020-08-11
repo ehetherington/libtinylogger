@@ -1,4 +1,5 @@
-#define _GNU_SOURCE	// for asprintf()
+/** _GNU_SOURCE for asprintf() */
+#define _GNU_SOURCE
 
 #include <stdio.h>
 #include <stdarg.h>

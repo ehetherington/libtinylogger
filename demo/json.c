@@ -4,14 +4,16 @@
 #include "tinylogger.h"
 #include "demo-utils.h"
 
-#define LOG_FILE "tinylogger.json"
-#define N_REPS 1
+#define LOG_FILE "tinylogger.json"	/**< the output file */
+#define N_REPS 1					/**< increase for a long file */
 
 /**
  * @fn int main(void)
  * @brief Short demo of the Json fromatter.
  *
  * The only escaping done is for the below mentioned characters.
+ *
+ * @return 0
  */
 int main(void) {
 	/*

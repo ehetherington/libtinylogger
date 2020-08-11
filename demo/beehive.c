@@ -1,5 +1,4 @@
-// https://stackoverflow.com/questions/21091000/how-to-get-thread-id-of-a-pthread-in-linux-c-program
-// man pthread_setname_np
+/** _GNU_SOURCE for pthread_setname_np */
 #define _GNU_SOURCE
 
 #include <stdio.h>
@@ -15,23 +14,28 @@
 #include <tinylogger.h>
 #include "demo-utils.h"
 
-// from kernel/sched.h
+/** from kernel/sched.h */
 #define TASK_COMM_LEN 16
-#define NAME_LEN TASK_COMM_LEN	// includes null termination
+/** includes null termination */
+#define NAME_LEN TASK_COMM_LEN
 
-#define N_THREADS		250
-#define N_LOOPS			1000
-#define SLEEP_MICROS	500
-#define FORMAT			log_fmt_tall
+#define N_THREADS		250		/**< number of threads to run */
+#define N_LOOPS			1000	/**< number of loops for each thread to run */
+#define SLEEP_MICROS	500		/**< maximum sleep duration for each loop */
+#define FORMAT			log_fmt_tall	/**< message format to use */
 
+/**
+ * bookkeeping for the threads
+ */
 struct thread_info {
-	char	name[NAME_LEN];
-	pthread_t	thread_id;
-	int			tid;
-	int			count;
-	int			sequence_number;
+	char	name[NAME_LEN];			/**< the thread name */
+	pthread_t	thread_id;			/**< the posix thread_id */
+	int			tid;				/**< the linux thread id */
+	int			count;				/**< the number of loops to do */
+	int			sequence_number;	/**< for verifying the thread message
+										 sequencing */
 };
-struct thread_info threads[N_THREADS];
+static struct thread_info threads[N_THREADS];
 
 /**
  * @fn int get_index(int)
@@ -114,7 +118,7 @@ static void *threadFunc(void *parm) {
  *
  * @return true if the message is parsed correctly
  */
-bool check_hello(char *line) {
+static bool check_hello(char *line) {
 	char date[32];
 	char time[32];
 	char level[16];
@@ -131,7 +135,7 @@ bool check_hello(char *line) {
 }
 
 /**
- * @fn bool_check_thread(char *)
+ * @fn bool check_thread(char *)
  *
  * @brief Check if the message is a valid "sleeping" message from the threads.
  *
@@ -269,7 +273,7 @@ bool scan_file(char *pathname) {
 
 
 /**
- * @fn int main(int, char *[])
+ * @fn int main(int argc, char *argv[])
  *
  * @brief Generate a log file in log_fmt_tall, log_fmt_json or log_fmt_xml
  * format.
@@ -277,6 +281,7 @@ bool scan_file(char *pathname) {
  * Multiple threads are started, and each produces the same number of messages.
  * The resulting file may optionally be verified if it is in the log_fmt_tall
  * format.
+ *
  * @return 0 on success
  */
 int main(int argc, char *argv[]) {

@@ -1,4 +1,5 @@
-#define _GNU_SOURCE // for pthread_getname_np and other reasons
+/** _GNU_SOURCE for pthread_getname_np */
+#define _GNU_SOURCE
 
 #include <time.h>
 #include <locale.h>
@@ -9,12 +10,11 @@
 
 #include "tinylogger.h"
 
-// from kernel/sched.h
-#define TASK_COMM_LEN 16
-#define NAME_LEN TASK_COMM_LEN  // includes null termination
+#define TASK_COMM_LEN 16		/**< from kernel/sched.h */
+#define NAME_LEN TASK_COMM_LEN  /**< includes null termination */
 
 /**
- * @fn int log_fmt_custom_1(FILE *, struct timespec *, int,
+ * @fn int log_fmt_custom_1(FILE *, int, struct timespec *, int,
  * const char *, const char *, int, char *)
  *
  * @brief Output messages with a CUSTOM format.
@@ -60,7 +60,7 @@ int log_fmt_custom_1(FILE *stream, int sequence, struct timespec *ts, int level,
 }
 
 /**
- * @fn int log_fmt_custom_2(FILE *, struct timespec *, int,
+ * @fn int log_fmt_custom_2(FILE *, int, struct timespec *, int,
  * const char *, const char *, int, char *)
  *
  * @brief Output messages with a CUSTOM format.

@@ -10,6 +10,7 @@
  * log_set_pre_init_level(LOG_LEVEL log_level).
  */
 int main(void) {
-	// log_set_pre_init_level(LL_NONE);	// this would turn of all messages
+	// log_set_pre_init_level(LL_NONE);	// this would turn off all messages
+	// log_set_pre_init_level(LL_ALL);	// this would turn on  all messages
 	log_info("hello, %s", "world");
 }

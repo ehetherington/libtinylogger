@@ -27,8 +27,11 @@ import java.util.List;
  * $ java ParseXMLDate
  *
  */
-
 public class ParseXMLDate {
+	/**
+	 * Parse a sample of the date, millis, and nanos fields from an XML
+	 * formatted log file
+	 */
 	public static void main(String[] args) {
 		/*
 		 * values copied from an xml record

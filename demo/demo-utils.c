@@ -1,5 +1,3 @@
-#define _GNU_SOURCE
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -59,7 +57,7 @@ void check_append(char *filename) {
 }
 
 /**
- * @fn char *get_proc_name(void)
+ * @fn char *get_proc_comm(void)
  *
  * @brief get the command name needed to match ps H -C command
  *

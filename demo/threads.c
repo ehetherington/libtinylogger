@@ -1,5 +1,7 @@
 // https://stackoverflow.com/questions/21091000/how-to-get-thread-id-of-a-pthread-in-linux-c-program
 // man pthread_setname_np
+
+/** _GNU_SOURCE for pthread_setname_np() */
 #define _GNU_SOURCE
 
 #include <stdio.h>
