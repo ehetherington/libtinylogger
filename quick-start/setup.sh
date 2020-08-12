@@ -22,6 +22,9 @@ LOGGER_DIR="logger"			# where to put the logger library source files
 EXAMPLE_DIR="examples"		# where to put the examples
 DEMO_LIB_DIR="demo-lib"		# where to put demo utils
 
+# making the docs creates html man and latex sub-directories in doc
+DOC_DIR="doc"
+
 # where to find the original sources
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 TOP_SRCDIR="$( dirname "$SCRIPT_DIR" )"
@@ -37,7 +40,7 @@ fi
 if [ $# = 1 ]; then
 	if [ "$1" = clean ]; then 
 		echo $1
-		rm -rf logger include lib demo-lib examples
+		rm -rf logger include lib demo-lib examples $DOC_DIR
 		exit $?
 	fi
 fi
