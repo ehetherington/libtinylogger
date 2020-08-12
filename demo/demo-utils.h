@@ -1,10 +1,17 @@
+/**
+ * @file demo-utils.h
+ * @brief Some support utils for the examples.
+ */
+
 #ifndef _DEMO_UTILS_H
 #define _DEMO_UTILS_H 1
 
-// from kernel/sched.h
-#define TASK_COMM_LEN 16	// includes null termination
+/** from kernel/sched.h
+ * includes null termination
+ */
+#define TASK_COMM_LEN 16
 
-/*
+/**
  * print an error message and exit
  */
 #define errExitEN(en, msg) \

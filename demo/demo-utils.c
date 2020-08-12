@@ -1,3 +1,7 @@
+/**
+ * @file demo-utils.c
+ * @brief Some support utils for the examples.
+ */
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -17,7 +21,7 @@
 
 /**
  * @fn void check_append(char *)
- * @brief alert the user that an existing file will be appended to
+ * @brief Alert the user that an existing file will be appended to.
  *
  * All formatters append to the destination file. The rationale is to avoid
  * losing valuable info in a pre-existing log by accidentally overwriting it.
@@ -25,6 +29,8 @@
  * 
  * For the demos, it is often desireable to start with a clean slate. An
  * opportunity is provided to make that choice.
+ *
+ * @param filename the filename to check for existance
  */
 void check_append(char *filename) {
 	struct stat statbuf;
