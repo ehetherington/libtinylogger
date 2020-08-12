@@ -5,7 +5,7 @@
 
 /** @file       tinylogger.h
  *  @brief      The tinylogger header file.
- *  @details    A tiny logger facility for small linux projects.
+ *  @details    A small logging facility for small linux projects.
  *  @author     Edward Hetherington
  */
 
@@ -122,6 +122,9 @@ int log_reopen_channel(LOG_CHANNEL *);
 int log_close_channel(LOG_CHANNEL *);
 void log_done(void);
 
+/* control logrotate support */
+int log_enable_logrotate(int signal);
+
 /* the formatters */
 int log_fmt_basic(FILE *, int, struct timespec *, int, const char *, const char *, int, char *);
 int log_fmt_systemd(FILE *, int, struct timespec *, int, const char *, const char *, int, char *);
@@ -135,11 +138,9 @@ int log_fmt_elapsed_time(FILE *, int, struct timespec *, int, const char *, cons
 int log_fmt_xml(FILE *, int, struct timespec *, int, const char *, const char *, int, char *);
 int log_fmt_json(FILE *, int, struct timespec *, int, const char *, const char *, int, char *);
 
-/* timestamp formatters for the formatters that include a timestamp */
+/* timestamp formatters for use by the main formatters */
 void log_format_timestamp(struct timespec *ts, SEC_PRECISION precision, char *buf, int len);
 void log_format_delta(struct timespec *ts, SEC_PRECISION precision, char *buf, int len);
-
-int log_enable_logrotate(int signal);
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
 TL_END_C_DECLS

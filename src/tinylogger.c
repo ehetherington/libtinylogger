@@ -5,7 +5,7 @@
 
 /**	@file		tinylogger.c
  *	@brief		The tinylogger source file.
- *	@details	A tiny logger facility for small linux projects.
+ *	@details	A small logging facility for small linux projects.
  *	@author		Edward Hetherington
  */
 
