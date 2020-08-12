@@ -5,6 +5,45 @@
 
 /** @file       xml_formatter.c
  *  @brief      XML Message formatting and output
+ *  @details    This is the same format javal.util.logging.XMLFormatter uses.
+ *  The output format is defined by Appendix A: DTD for XMLFormatter Output
+ *  found at:
+ *  https://docs.oracle.com/javase/10/core/java-logging-overview.htm
+ *
+ *  The special characters '&' (AMP), '<' (LT), '>' (GT), '\"' (QUOT), and
+ *  '\'' (APOS) are replaced by their XML entities.
+ *
+ * Example output:
+```
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE log SYSTEM "logger.dtd">
+<log>
+<record>
+  <date>2020-08-11T20:29:01.436-04:00</date>
+  <millis>1597192141436</millis>
+  <nanos>527268</nanos>
+  <sequence>1</sequence>
+  <logger>tinylogger</logger>
+  <level>INFO</level>
+  <class>xml.c</class>
+  <method>main</method>
+  <thread>260871</thread>
+  <message>Special chars are escaped in the &quot;&lt;xml&gt;&quot; format. &amp; it&apos;s msg #0.</message>
+</record>
+<record>
+  <date>2020-08-11T20:29:01.436-04:00</date>
+  <millis>1597192141436</millis>
+  <nanos>607618</nanos>
+  <sequence>2</sequence>
+  <logger>tinylogger</logger>
+  <level>INFO</level>
+  <class>xml.c</class>
+  <method>main</method>
+  <thread>260871</thread>
+  <message>Special chars are escaped in the &quot;&lt;xml&gt;&quot; format. &amp; it&apos;s msg #1.</message>
+</record>
+</log>
+```
  *  @author     Edward Hetherington
  */
 
@@ -12,9 +51,9 @@
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
 #define _GNU_SOURCE	/**< for syscall SYS_gettid */
-// from kernel/sched.h
+/* from kernel/sched.h */
 #define TASK_COMM_LEN 16
-#define NAME_LEN TASK_COMM_LEN  // includes null termination
+#define NAME_LEN TASK_COMM_LEN  /* includes null termination */
 #endif /* DOXYGEN_SHOULD_SKIP_THIS */
 
 #include <stdlib.h>
@@ -24,8 +63,6 @@
 
 #include "tinylogger.h"
 #include "private.h"
-
-extern struct log_label log_labels[];
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
 #define XML_AMP		"&amp;"		/**< ampersand    */
@@ -86,7 +123,7 @@ static char *entity(int character) {
 
 /**
  * @fn char *escape_xml(char const *, char *, int)
- * @brief Escape '&', '<', '>', '\"', '\\'
+ * @brief Escape '&', '<', '>', '\"', '\''
  * No special treatment of non-ascii characters is performed.
  * @param input the string to escape
  * @param buf a buffer to place the escaped output
@@ -172,7 +209,9 @@ int log_do_xml_tail(FILE *stream) {
 /**
  * @fn int log_fmt_xml(FILE *stream, int sequence, struct timespec *ts, int level,
  * const char *file, const char *function, int line, char *msg)
- * @brief Output messages with timestamp, level and message.
+ *
+ * @brief Output messages in XML format.
+ *
  * @param stream the output stream to write to
  * @param sequence the sequence number of the message
  * @param ts the struct timespec timestamp
@@ -182,22 +221,6 @@ int log_do_xml_tail(FILE *stream) {
  * @param line the line number to print
  * @param msg the actual use message to print
  * @return the number of characters written.
- *
- * Example output:
-```
-<record>
-  <date>2020-06-14T08:46:36.624</date>
-  <millis>1592138796624</millis>
-  <nanos>981722</nanos>
-  <sequence>0</sequence>
-  <logger>tinylogger</logger>
-  <level>TODO</level>
-  <class>formats.c</class>
-  <method>main</method>
-  <thread>393487</thread>
-  <message>this message uses the &quot;&lg;xml&gt;&quot; format &amp; it&apos;s easy!</message>
-</record>
-```
  */
 int log_fmt_xml(FILE *stream, int sequence, struct timespec *ts, int level,
     const char *file, const char *function, int line, char *msg) {

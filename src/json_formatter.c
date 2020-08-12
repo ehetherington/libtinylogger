@@ -5,7 +5,59 @@
 
 /** @file       json_formatter.c
  *  @brief      Json Message formatting and output
+ *  @details	The json output is an array of records. The record objects are:
+ *
+ *  - isoDateTime The message timestamp - includes UTC offset
+ *  - timespec    The struct timespec timestamp (basis of isoDateTime)
+ *    - sec
+ *    - nsec
+ *  - sequence    The sequence number of the message. Starts at 1.
+ *  - logger      Always "tinylogger".
+ *  - file        __FILE__ captured by the calling macro
+ *  - function    __function__ captured by the calling macro
+ *  - line        __LINE__ captured by the calling macro
+ *  - threadId    The linux thread id of the caller.
+ *  - threadName  The linux thread name of the caller.
+ *  - message     The user message.
+ *
+ * Example output:
+```
+{
+  "records" : [  {
+    "isoDateTime" : "2020-08-11T17:40:31.109019932-04:00",
+    "timespec" : {
+      "sec" : 1597182031,
+      "nsec" : 109019932
+    },
+    "sequence" : 1,
+    "logger" : "tinylogger",
+    "level" : "INFO",
+    "file" : "json.c",
+    "function" : "main",
+    "line" : 35,
+    "threadId" : 246970,
+    "threadName" : "json",
+    "message" : "\b backspaces are escaped for Json output"
+  },  {
+    "isoDateTime" : "2020-08-11T17:40:31.109213215-04:00",
+    "timespec" : {
+      "sec" : 1597182031,
+      "nsec" : 109213215
+    },
+    "sequence" : 2,
+    "logger" : "tinylogger",
+    "level" : "INFO",
+    "file" : "json.c",
+    "function" : "main",
+    "line" : 36,
+    "threadId" : 246970,
+    "threadName" : "json",
+    "message" : "\r carriage returns are escaped for Json output"
+  } ]
+}
+```
  *  @author     Edward Hetherington
+ *
  */
 
 #include "config.h"
@@ -24,10 +76,6 @@
 
 #include "tinylogger.h"
 #include "private.h"
-
-extern struct log_label log_labels[];
-
-#define LABEL_LEN 16	/**< quiet doxygen */
 
 /**
  * @fn char *escape_json(char const *, char *, int)
@@ -155,9 +203,6 @@ static int do_json_end(FILE *stream) {
  * @param msg the actual use message to print
  * @return the number of characters written.
  *
- * Example output:
-```
-```
  */
 int log_fmt_json(FILE *stream, int sequence, struct timespec *ts, int level,
     const char *file, const char *function, int line, char *msg) {
