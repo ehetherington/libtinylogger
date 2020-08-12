@@ -5,6 +5,11 @@
 
 /** @file       formatters.c
  *  @brief      Message formatting and output
+ *  @details    This is a list of the pre-defined simple message formatters.
+ *  log_format_timestamp() and log_get_level() are exceptions. The most important
+ *  detail of each log_fmt_xxx() function is the "Example output" - they all
+ *  get common parameters. log_fmt_elapsed_time() is also a useful format -
+ *  take a look at it.
  *  @author     Edward Hetherington
  */
 
@@ -123,18 +128,24 @@ static char *fmt_sec  = "%+03ld:%02ld:%02ld";
 /**
  * @fn void log_format_timestamp(struct timespec *ts, SEC_PRECISION precision,
  * 	char *buf, int len)
- * @brief Format the (struct timespec) ts in tb to an ascii string.
+ * @brief Format the (struct timespec) ts to an ascii string in buf.
+ *
+ * @details This is a utility function for use by the main message formatters to
+ * format the timestamp portion of the log message.
+ *
+ * It is made "public" for use by custom message formatters.
  *
  * The fractional seconds appended is specified by the SEC_PRECISION precision.
- * - SP_NONE  no fraction is appended
- * - SP_MILLI .nnn is appended
- * - SP_MICRO .nnnnnn is appended
- * - SP_NANO  .nnnnnnnnn is appended
+ *
+ *  - SP_NONE     no fraction is appended
+ *  - SP_MILLI    .nnn is appended
+ *  - SP_MICRO    .nnnnnn is appended
+ *  - SP_NANO     .nnnnnnnnn is appended
  *
  * @param ts the previously obtained struct timespec timestamp.
  * @param precision the precision of the fraction of second to display
  * @param buf the buffer to format the timestamp to
- * @param len the length of that buffer. Must be >= 30
+ * @param len the length of that buffer. Must be >= TIMESTAMP_LEN
  */
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat-truncation"
@@ -176,7 +187,7 @@ void log_format_timestamp(struct timespec *ts, SEC_PRECISION precision,
 			case SP_MILLI: buf[23] = '\0'; break;
 			case SP_MICRO: buf[26] = '\0'; break;
 			case SP_NANO:  buf[29] = '\0'; break;
-			default: break;	// quiet warning about no case for ISO_FMT
+			default: break;	/* quiet warning about no case for ISO_FMT */
 		}
 	} else {
 		snprintf(buf, len, "%s", "oops");
@@ -442,6 +453,9 @@ int log_fmt_debug_tall(FILE *stream, int sequence, struct timespec *ts, int leve
  * @fn int log_fmt_elapsed_time(FILE *, int, struct timespec *ts, int,
  * const char *, const char *, int line, char *)
  * @brief Use elapsed time as the timestamp.
+ *
+ * @details This format prints elapsed time since the channel was initialized.
+ * The t0 may be reset by calling log_select_clock().
  *
  * @param stream the output stream to write to
  * @param sequence the sequence number of the message
