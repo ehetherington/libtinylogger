@@ -30,6 +30,12 @@
  * For the demos, it is often desireable to start with a clean slate. An
  * opportunity is provided to make that choice.
  *
+ * The user is presented with 3 options
+ * - a append to the current file - function returns
+ * - o overwrite the current file - An attempt to remove the current file is
+ *   made. exit(EXIT_FAILURE) on failure, return on success.
+ * - q quit - exit(EXIT_SUCCESS)
+ *
  * @param filename the filename to check for existance
  */
 void check_append(char *filename) {
