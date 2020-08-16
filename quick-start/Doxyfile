@@ -187,7 +187,7 @@ SHORT_NAMES            = NO
 # description.)
 # The default value is: NO.
 
-JAVADOC_AUTOBRIEF      = NO
+JAVADOC_AUTOBRIEF      = YES
 
 # If the QT_AUTOBRIEF tag is set to YES then doxygen will interpret the first
 # line (until the first dot) of a Qt-style comment as the brief description. If
@@ -791,11 +791,11 @@ WARN_LOGFILE           =
 # spaces. See also FILE_PATTERNS and EXTENSION_MAPPING
 # Note: If this tag is empty the current directory is searched.
 
-// Add examples to "lint" the comments.
-// Unfortunately doxygen is not intended for multiple main programs, so the
-// docs for each main function are ignored.
-//INPUT                  = logger demo-lib examples
-INPUT                  = logger demo-lib
+# Add examples to "lint" the comments.
+# Unfortunately doxygen is not intended for multiple main programs, so the
+# docs for each main function are ignored.
+#INPUT                  = examples.md logger demo-lib examples
+INPUT                  = examples.md logger guide demo-lib
 
 # This tag can be used to specify the character encoding of the source files
 # that doxygen parses. Internally doxygen uses the UTF-8 encoding. Doxygen uses
@@ -869,7 +869,7 @@ FILE_PATTERNS          = *.c \
 # be searched for input files as well.
 # The default value is: NO.
 
-RECURSIVE              = NO
+RECURSIVE              = YES
 
 # The EXCLUDE tag can be used to specify files and/or directories that should be
 # excluded from the INPUT source files. This way you can easily exclude a
@@ -987,7 +987,7 @@ FILTER_SOURCE_PATTERNS =
 # (index.html). This can be useful if you have a project on for instance GitHub
 # and want to reuse the introduction page also for the doxygen output.
 
-USE_MDFILE_AS_MAINPAGE =
+USE_MDFILE_AS_MAINPAGE = guide/quick-start.md
 
 #---------------------------------------------------------------------------
 # Configuration options related to source browsing

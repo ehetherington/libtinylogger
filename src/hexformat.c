@@ -3,18 +3,17 @@
  * This code is licensed under MIT license (see LICENSE in top dir for details)
  */
 
-/**
- * @file       hexformat.c
- * @brief      Format a memory buffer to a hex representation in another
- *             buffer.
- * @details    The output includes a hex offset relative to the beginning of
- *             the input buffer, the bytes in hex, and the printable chars of
- *             the input.
- * @author     Edward Hetherington
- */
-
-/*
+/** @file       hexformat.c
+ *  @brief      Format a memory region to a hex + ascii representation.
+ *  @details    The output includes a hex offset relative to the beginning of
+ *              the input buffer, the bytes in hex, and the printable chars of
+ *              the input.
+ *
  * Example output:
+ *
+```
+note the 2 leading spaces and the treatment of partial last lines:
+
   0000  00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f  ................
   0010  10 11 12 13 14 15 16 17 18 19 1a 1b 1c 1d 1e 1f  ................
   0020  20 21 22 23 24 25 26 27 28 29 2a 2b 2c 2d 2e 2f   !"#$%&'()*+,-./
@@ -32,12 +31,16 @@
   00e0  e0 e1 e2 e3 e4 e5 e6 e7 e8 e9 ea eb ec ed ee ef  ................
   00f0  f0 f1 f2 f3 f4 f5 f6 f7 f8 f9 fa fb fc fd fe ff  ................
   0100  00 01 02 03 04 05 06 07                          ........
- */
+```
+  @author Edward Hetherington
+*/
 
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
+
+#include "private.h" /**< make sure declaration and definition match */
 
 /*
  * Each line has a variable length "buffer address" field, followed by a
@@ -72,10 +75,12 @@
 #define ADDRESS_FORMAT "  %04lx  "
 
 /**
- * Assume 64 bit addresses -> 8 hex digits
+ * Assume 64 bit addresses => 8 hex digits
+ *
  * max address field = 2 spaces + 8 hex digits + 2 spaces
+ *
  * The address offsets are printed with a minimum of four hex digits, but may
- * be up to 8 digits (64 bits). MAX_ADDRESS_FIELD includes two leading space,
+ * be up to 8 digits (64 bits). MAX_ADDRESS_FIELD includes two leading spaces,
  * the maximum of 8 digits, and the two trailing spaces.
  */
 #define MAX_ADDRESS_FIELD (12)
@@ -159,15 +164,14 @@ static void fmt_line(unsigned char const *buf, size_t const len, char *line_buf)
 /**
  * @fn char *hexformat(void const * const mem, size_t const len)
  *
- * @brief format a memory buffer to hex representation
+ * @brief Format a memory region to hex + ascii representation.
  *
  * @param mem accept a pointer to anything
  * @param len the length of the memory region
  *
- * @return A malloc()'ed buffer with the results. If the buffer pointer is NULL
- * or the buffer length is zero, a "result" with an appropriate message
- * is returned. If the malloc fails, NULL is returned;
- * All non-null results must be freed with free().
+ * @return A malloc()'ed buffer with the results. If mem is NULL or len is
+ * zero, a "result" with an appropriate message is returned. If the malloc()
+ * fails, NULL is returned. All non-null results must be freed with free().
  */
 char *hexformat(void const * const mem, size_t const len) {
 	unsigned char const * const u_mem = mem;	/* avoid a cast */

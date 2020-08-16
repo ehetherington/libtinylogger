@@ -39,11 +39,9 @@ TL_BEGIN_C_DECLS
 
 /**
  * @struct _logChannel
- * Parameters used to configure a logging channel.
- * If pathname is supplied, it is opened in append mode. Then, if a rotate
- * signal is caught, the file is closed and reopened to support log rotation.
- *
- * Otherwise the supplied output * stream is used.
+ * @brief Parameters used to configure a logging channel.
+ * This structure definition is not "user" visible. It is protected with mutex
+ * so that multiple threads can access it in a consistant state.
  */
 struct _logChannel {
 	LOG_LEVEL	level;			/**< the minimum level to log */

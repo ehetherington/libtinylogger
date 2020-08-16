@@ -22,8 +22,15 @@ LOGGER_DIR="logger"			# where to put the logger library source files
 EXAMPLE_DIR="examples"		# where to put the examples
 DEMO_LIB_DIR="demo-lib"		# where to put demo utils
 
+DOC_DIR="doc"		# doxygen output
+GUIDE_DIR="guide"	# markdown for doxygen
+
+
 # making the docs creates html man and latex sub-directories in doc
-DOC_DIR="doc"
+DOC_DIRS="$DOC_DIR $GUIDE_DIR"
+
+# directories to remove for "clean"
+CLEAN_DIRS="$LIB_DIR $INC_DIR $LOGGER_DIR $EXAMPLE_DIR $DEMO_LIB_DIR $DOC_DIRS"
 
 # where to find the original sources
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
@@ -39,8 +46,9 @@ fi
 # $ setup.sh clean
 if [ $# = 1 ]; then
 	if [ "$1" = clean ]; then 
-		echo $1
-		rm -rf logger include lib demo-lib examples $DOC_DIR
+		cd $SCRIPT_DIR
+		echo "cleaning $SCRIPT_DIR"
+		rm -rf $CLEAN_DIRS
 		exit $?
 	fi
 fi
@@ -70,8 +78,14 @@ mkdir -p "$DEMO_LIB_DIR"
 mv "$EXAMPLE_DIR"/demo-utils.[ch] "$DEMO_LIB_DIR"
 cp "$SCRIPT_DIR"/Makefile.demo-lib "$DEMO_LIB_DIR"/Makefile
 
-# copy the top Makefile over (if necessary)
+# copy the top Makefiles and setup.sh over (if necessary)
 if [ "$SCRIPT_DIR" != "$( pwd )" ]; then
-	cp "$SCRIPT_DIR"/Makefile .
+	cp "$SCRIPT_DIR"/config.h .
+	cp "$SCRIPT_DIR"/Makefile* .
+	cp "$SCRIPT_DIR"/setup.sh .
+	cp "$SCRIPT_DIR"/Doxyfile .
 fi
 
+# copy the guide markdown
+mkdir -p $GUIDE_DIR
+cp "$TOP_SRCDIR"/guide/*.md $GUIDE_DIR

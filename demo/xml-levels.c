@@ -13,7 +13,7 @@
  * interpolated or extrapolated relative to the java.util.logging.Levels.
  *
  * Notice that the sd-daemon levels not available in java.util.logging.Level
- * are printed with numberic values.
+ * are printed with numeric values.
  */
 int main(void) {
 	/*

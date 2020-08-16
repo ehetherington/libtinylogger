@@ -4,7 +4,7 @@
 # man pages will be in doc/man
 # a pdf doc can be made in doc/latex (Makefile profided).
 # If you have doxygen installed, try "make docs"
-DOC_DIR = doc
+GENERATED_DIRS = doc guide
 
 all: examples
 
@@ -22,7 +22,7 @@ clean:
 	$(MAKE) -C logger clean
 	$(MAKE) -C demo-lib clean
 	$(MAKE) -C examples clean
-	rm -rf $(DOC_DIR)
+	rm -rf $(GENERATED_DIRS)
 	rm -f lib/libtinylogger.a	                                     
 
 docs:

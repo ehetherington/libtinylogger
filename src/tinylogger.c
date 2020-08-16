@@ -54,7 +54,7 @@ static LOG_LEVEL pre_init_level = LL_INFO;
 
 /**
  * The lock to support multithreaded access to the log_config data. Must be
- * public for logrotate.c
+ * public for tinylogger.c and logrotate.c to access it.
  */
 pthread_mutex_t log_lock = PTHREAD_MUTEX_INITIALIZER;
 
