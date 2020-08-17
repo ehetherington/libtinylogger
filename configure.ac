@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.69])
-AC_INIT([tinylogger], [1.0.52], [ejh.1957.eh@gmail.com])
+AC_INIT([tinylogger], [0.5.0], [ejh.1957.eh@gmail.com])
 #AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_HEADER([config.h])
 AC_CONFIG_SRCDIR([src])
