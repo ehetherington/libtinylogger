@@ -40,8 +40,9 @@ It may be compiled directly with a target program, or installed as a library.
    - [JSON](#log_fmt_json) (Structured format).
 4. [Other samples](#other-samples)
    - [Two stream output](#two-stream-output)
-   - [Custom formats](#custom-formats)
-5. [Additional Information](guide/guide.md)
+   - [Thread ID and name](#thread-id-name)
+5. Additional Information
+   - A [guide](guide/guide.md) (markdown in the guide subdirectory)
 
 ## Getting started <a name="getting_started"></a>
 ### Quick Start
@@ -298,7 +299,7 @@ DEBUG message appears because this stream uses a different log level.
     2020-05-29 08:39:31.286 INFO      0010  48 6f 73 74 3a 20 77 77 77 0d 0a 0d 0a           Host: www....
 ```
 
-### Message with thread id and thread name
+### Message with thread id and thread name <a name="thread-id-name"/>
 This is the Linux thread id, not the pthread_id.
 ```
 2020-05-25 17:28:17.011 DEBUG   65623:thread_2 test-logger.c:main:110 eth0     AF_PACKET (17)
