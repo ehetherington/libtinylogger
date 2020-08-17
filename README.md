@@ -1,4 +1,4 @@
-## libTinyLogger
+## libTinyLogger (SYFLIC)
 
 ### Small Yet Flexible Logger In C.
 
