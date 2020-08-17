@@ -72,7 +72,7 @@ note the 2 leading spaces and the treatment of partial last lines:
  * The printf format specifier for the buffer offset field.
  * Must match MAX_ADDRESS_FIELD for proper results.
  */
-#define ADDRESS_FORMAT "  %04lx  "
+#define ADDRESS_FORMAT "  %04zu  "
 
 /**
  * Assume 64 bit addresses => 8 hex digits
