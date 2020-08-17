@@ -1,9 +1,9 @@
 
-# documentation produced by doxygen are placed in subdirectories of doc
+# Documentation produced by doxygen is placed in subdirectories of doc.
 # html docs will be in doc/html
 # man pages will be in doc/man
-# a pdf doc can be made in doc/latex (Makefile profided).
-# If you have doxygen installed, try "make docs"
+# A pdf doc can be made in doc/latex (Makefile provided).
+# If you have doxygen installed, try "make docs".
 GENERATED_DIRS = doc guide
 
 all: examples
