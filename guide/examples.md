@@ -1,5 +1,8 @@
 ## Examples
 
+The examples are available in the demo directory. If you use the quick-start
+directory, setup.sh copies them to quick-start/examples.
+
 ### hello_world.c
 A "one-liner" demonstrating that the library can be used with no setup or
 initialization.
