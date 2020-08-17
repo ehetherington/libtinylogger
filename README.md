@@ -3,7 +3,7 @@
 ### Small Yet Flexible Logger In C.
 
 This is a small logging facility intended for small Linux projects. It logs
-mesages from a single process to a file and/or a stream such as stderr.
+messages from a single process to a file and/or a stream such as stderr.
 
 It may be compiled directly with a target program, or installed as a library.
 
