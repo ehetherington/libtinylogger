@@ -14,7 +14,7 @@ It may be compiled directly with a target program, or installed as a library.
 - It produces output in a few different formats.
   - Pre-defined formats for systemd, standard and debug use.
   - User defined formatters are possible.
-  - Structured output in XML and Json
+  - Structured output in XML and JSON
 - multi-thread support, with formats that print thread id and name
 - logrotate support. Flushes, closes, and opens a log file on receipt of a
   signal from logrotate.
@@ -28,13 +28,17 @@ It may be compiled directly with a target program, or installed as a library.
    - [Hello world](#hello-world)
    - [Two streams](#two-streams)
 3. [Output formats](#output-formats)
-   - [basic](#basic)
-   - [systemd](#systemd)
-   - [standard](#standard)
-   - [debug](#debug)
-   - [XML](#xml)
-   - [Json](#json)
-4. [Example Output](#example-output)
+   - [basic](#log_fmt_basic)
+   - [standard](#log_fmt_standard)
+   - [debug](#log_fmt_debug)
+   - [debug_tid](#log_fmt_debug_tid)
+   - [debug_tname](#log_fmt_debug_tname)
+   - [debug_tall](#log_fmt_debug_tall)
+   - [elapsed_time](#log_fmt_elapsed_time) (Elapsed time from channel
+        initialization. Starting time may be reset).
+   - [XML](#log_fmt_xml) (Structured format).
+   - [JSON](#log_fmt_json) (Structured format).
+4. [Other samples](#other-samples)
    - [Two stream output](#two-stream-output)
    - [Custom formats](#custom-formats)
 5. [Additional Information](guide/guide.md)
@@ -50,7 +54,7 @@ $ make
 ```
 This builds a static library called libtinylogger.a which can be linked to your
 project. It also builds the examples, which demonstrate different features of
-the library.
+the library. Additional info in [quick-start](guide/quick-start.md).
 
 ### Installation as a library is optional
 This is an Autotools package. For installation into /usr/local/lib,
@@ -80,20 +84,6 @@ Source code: [hello_world.c](demo/hello_world.c)
         log_info("hello, %s\n", "world");
     }
 ~~~
-
-To compile with library installed:
-
-    gcc -o hello_world hello_world.c -pthread -lpthread -ltinylogger
-
-Minimum Makefile without library installed:
-```
-TINY_LOGGER_HDRS = config.h tinylogger.h private.h
-TINY_LOGGER_SRCS = tinylogger.c formatters.c xml_formatter.c logrotate.c
-
-LDFLAGS = -lpthread
-
-hello_world: hello_world.c $(TINY_LOGGER_HDRS) $(TINY_LOGGER_SRCS)
-```
 
 The output to stderr would be:
 
@@ -150,76 +140,102 @@ The output to /tmp/second.log would be:
 ~~~
 
 ## Pre-configured output formats available <a name="output-formats"/>
-Based on the output format selected by the user, a use of log_debug() will
-produce a variety of output formats. Given the following line of code:
 
-~~~{.c}
-    log_debug("%s AF_PACKET(%d)", ifname, address_family);
-~~~
-
-### basic <a name="basic"/>
+### basic <a name="log_fmt_basic"/>
 Output messages with just the user message.
 
--- Example:
+```
+eth0     AF_PACKET (17)
+```
 
-~~~
-    eth0     AF_PACKET (17)
-~~~
-
-### systemd <a name="systemd">
+### systemd <a name="log_fmt_systemd">
 Output messages in systemd compatible format. Systemd log messages have their
 log level inclosed in angle brackets prepended to the user message. When viewed
 through journalctl, timestamps are added, so only the log level and user message
 are needed.
 
--- Example:
+```
+<7>eth0     AF_PACKET (17)
+```
 
-~~~
-    <7>eth0     AF_PACKET (17)
-~~~
-
-### standard <a name="standard">
+### standard <a name="log_fmt_standard">
 Output messages with timestamp, level and message.
 
--- Example:
+```
+2020-05-25 16:55:18.821 DEBUG   eth0     AF_PACKET (17)
+```
 
-~~~
-    2020-05-25 16:55:18.821 DEBUG   eth0     AF_PACKET (17)
-~~~
-
-### debug <a name="debug">
+### debug <a name="log_fmt_debug">
 Output messages with timestamp, level, source code file, function, and line
 number, and finally the message.
 
--- Example:
+```
+2020-05-25 17:28:17.011 DEBUG   test-logger.c:main:110 eth0     AF_PACKET (17)
+```
 
-~~~
-    2020-05-25 17:28:17.011 DEBUG   test-logger.c:main:110 eth0     AF_PACKET (17)
-~~~
+### debug_tid <a name="log_fmt_debug_tid">
+log_fmt_debug with thread id added
+```
+2020-05-25 17:28:17.011 DEBUG   65623 test-logger.c:main:110 eth0     AF_PACKET (17)
+```
 
-### XML <a name="xml">
+### debug_tname <a name="log_fmt_debug_tname">
+log_fmt_debug with thread name added
+```
+2020-05-25 17:28:17.011 DEBUG   thread_2 test-logger.c:main:110 eth0     AF_PACKET (17)
+```
+
+### debug_tall <a name="log_fmt_debug_tall">
+log_fmt_debug with thread id and thread name added
+```
+2020-05-25 17:28:17.011 DEBUG   65623:thread_2 test-logger.c:main:110 eth0     AF_PACKET (17)
+```
+
+### elapsed_time <a name="log_fmt_elapsed_time">
+log_fmt_debug with elapsed time timestamp
+```
+0.000001665 INFO    formats.c:main:172 this message has elapsed time
+0.000010344 INFO    formats.c:main:173 this message has elapsed time
+0.000018740 INFO    formats.c:main:174 this message has elapsed time
+```
+
+
+### XML <a name="log_fmt_xml">
 Output messages in java.util.logging.XMLFormatter format.
 
--- Example:
-
 ```
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE log SYSTEM "logger.dtd">
+<log>
 <record>
-  <date>2020-06-19T22:43:01.915644710-04:00:00</date>
-  <millis>1592620981915</millis>
-  <nanos>644710</nanos>
+  <date>2020-08-15T23:10:49.081-04:00</date>
+  <millis>1597547449081</millis>
+  <nanos>969853</nanos>
+  <sequence>1</sequence>
+  <logger>tinylogger</logger>
+  <level>INFO</level>
+  <class>xml.c</class>
+  <method>main</method>
+  <thread>389042</thread>
+  <message>Special chars are escaped in the &quot;&lt;xml&gt;&quot; format. &amp; it&apos;s msg #0.</message>
+</record>
+<record>
+  <date>2020-08-15T23:10:49.082-04:00</date>
+  <millis>1597547449082</millis>
+  <nanos>112552</nanos>
   <sequence>2</sequence>
   <logger>tinylogger</logger>
   <level>INFO</level>
   <class>xml.c</class>
   <method>main</method>
-  <thread>1002084</thread>
-  <message>This message uses the &quot;&lt;xml&gt;&quot; format. It&apos;s msg #2.</message>
+  <thread>389042</thread>
+  <message>Special chars are escaped in the &quot;&lt;xml&gt;&quot; format. &amp; it&apos;s msg #1.</message>
 </record>
+</log>
 ```
-### Json <a name="json">
+### JSON <a name="log_fmt_json">
 Output message in json format.
 
--- Example:
 ```
 {
   "records" : [  {
@@ -256,7 +272,7 @@ Output message in json format.
 }
 ```
 
-## Example Output <a name="example-output"/>
+## Other Samples <a name="other-samples"/>
 ### Messages simultaneously logged by systemd/journalctl and to debug file <a name="two-stream-output"/>
 
 Note different formatting and extra "debug" level message due to different log level
@@ -264,51 +280,34 @@ filtering.
 
 -- Output in systemd compatible format to stderr, logged by systemd and viewed by journalctl
 
-~~~
+```
     May 29 08:39:31 raspberrypi wol-broadcaster[519]: pkt from obscured-for-safety dot com (11.111.111.111:37329) was not a magic packet
     May 29 08:39:31 raspberrypi wol-broadcaster[519]: packet contents:
     May 29 08:39:31 raspberrypi wol-broadcaster[519]:   0000  47 45 54 20 2f 20 48 54 54 50 2f 31 2e 31 0d 0a  GET / HTTP/1.1..
     May 29 08:39:31 raspberrypi wol-broadcaster[519]:   0010  48 6f 73 74 3a 20 77 77 77 0d 0a 0d 0a           Host: www....
-~~~
+```
 
--- The same messages logged to a debug file using standard output format
+-- The same messages logged to a debug file using standard output format. The
+DEBUG message appears because this stream uses a different log level.
 
-~~~
+```
     2020-05-29 08:39:31.285 DEBUG   received pkt from obscured-for-safety dot com (11.111.111.111:37329)
     2020-05-29 08:39:31.285 INFO    pkt from obscured-for-safety dot com (11.111.111.111:37329) was not a magic packet
     2020-05-29 08:39:31.285 INFO    packet contents:
     2020-05-29 08:39:31.286 INFO      0000  47 45 54 20 2f 20 48 54 54 50 2f 31 2e 31 0d 0a  GET / HTTP/1.1..
     2020-05-29 08:39:31.286 INFO      0010  48 6f 73 74 3a 20 77 77 77 0d 0a 0d 0a           Host: www....
-~~~
+```
 
 ### Message with thread id and thread name
 This is the Linux thread id, not the pthread_id.
 ```
 2020-05-25 17:28:17.011 DEBUG   65623:thread_2 test-logger.c:main:110 eth0     AF_PACKET (17)
 ```
-The linux thread id is more for use with utilities such as ps. It is the thread
-id displayed, for instance, by:
+The linux thread id is used rather than the posix thread id. It can be accessed, for instance, by:
 ```
-$ ps H -C threads -o 'pid tid cmd comm'
+$ ps H -C example-program -o 'pid tid cmd comm'
 ```
 Examples with multiple threads and message formats that display thread id are:
 [threads.c](demo/threads.c) and [beehive.c](demo/beehive.c).
 
 
-### Demo that displays all pre-configured outputs and a custom format <a name="custom-formats"/>
-A custom format may be created. This [demo program](demo/formats.c) shows
-how to create a custom format and demonstrates it and all the predefined
-ones.
-
-This is the output from that program:
-```
-this message uses the basic format
-<6>this message uses the systemd format
-2020-06-13 09:41:04 INFO    this message uses the standard format
-2020-06-13 09:41:04.678 INFO    formats.c:main:114 this message uses the debug format
-2020-06-13 09:41:04.678 INFO    327645 formats.c:main:117 this message uses the debug_tid format
-2020-06-13 09:41:04.678 INFO    formats formats.c:main:120 this message uses the debug_tname format
-2020-06-13 09:41:04.678 INFO    327645:formats formats.c:main:123 this message uses the debug_tall format
-June 13, 2020, 09:41:04 INFO    327645:formats this message uses a CUSTOM format
-junio 13, 2020, 09:41:04 INFO    formats.c:main:139 this message uses a another CUSTOM format
-```

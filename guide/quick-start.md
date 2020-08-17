@@ -24,3 +24,5 @@ has more detailed docs in the source code.
 
 There is a list of pre-configured message formats in guide/formats.md
 
+There several files that may give helpful info in the guide directory. Online
+version at https://github.com/ehetherington/libtinylogger/blob/master/guide/guide.md

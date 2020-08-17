@@ -7,7 +7,7 @@ initialization.
 ### formats.c
 A sampler of the available formats.
 
-Along with the expected single line formats, the Json and XML structured
+Along with the expected single line formats, the JSON and XML structured
 formats are shown.
 
 It also demonstrates the elapsed time format. The elapsed time may be reset.
@@ -24,7 +24,7 @@ Source file, function and line are also displayed.
 With the default format, a command line option to verify that each thread
 generated the correct number of messages in the correct order may be selected.
 
-Json and XML formats may also be selected on the command line.
+JSON and XML formats may also be selected on the command line.
 
 
 ### clocks.c
@@ -37,10 +37,10 @@ CLOCK_MONOTONIC and CLOCK_MONOTONIC_RAW are most useful if you are using an
 elapsed time format, as they are guaranteed not to go backwards.
 
 ### json.c
-Writes a json formatted log. Demonstrates the escaping of the special
+Writes a JSON formatted log. Demonstrates the escaping of the special
 characters.
 A log_memory() call is added to show that the hex format message is in a single
-json "message", not spread across multiple ones that would need to be
+JSON "message", not spread across multiple ones that would need to be
 reassembled.
 
 ### levels.c
@@ -72,7 +72,7 @@ thread) by an appropriate sequence of operations.
 
 The mode of operation may be selected from the command line.
 
-It defaults to a debug message format, but Json or XML may be selected from the
+It defaults to a debug message format, but JSON or XML may be selected from the
 command line.
 
 TODO: doxygen links logrotate.c to the library source file. Figure out how to
@@ -96,7 +96,7 @@ A simpler example demonstrating formats with thread info.
 It is also a handy reminder for getting the thread id's using the ps command.
 
 ### xml.c
-A short example using the xml message format.
+A short example using the XML message format.
 The format is specified by Appendix A: DTD for XMLFormatter Output in
 https://docs.oracle.com/javase/10/core/java-logging-overview.htm
 
