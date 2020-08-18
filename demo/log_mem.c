@@ -41,11 +41,24 @@
  * @return 0 on success
  */
 int main(void) {
+	LOG_CHANNEL *ch;
 	char buf[256 + 8];
 
 	for (int n = 0; n < sizeof(buf); n++) {
 		buf[n] = n;
 	}
 
+	/* open a channel using the debug format */
+	ch = log_open_channel_s(stderr, LL_INFO, log_fmt_debug);
+
+	/* dump the whole buffer */
 	log_memory(LL_INFO, buf, sizeof(buf), "hello, %s", "world");
+	log_close_channel(ch);
+
+	/* open a new channel using the json format */
+	ch = log_open_channel_s(stderr, LL_INFO, log_fmt_json);
+	/* print a short piece of the buffer */
+	log_memory(LL_INFO, buf + 0x20, 24, "hello, %s", "world");
+	log_close_channel(ch);
+
 }
