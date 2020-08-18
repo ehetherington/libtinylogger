@@ -38,10 +38,11 @@ It may be compiled directly with a target program, or installed as a library.
         initialization. Starting time may be reset).
    - [XML](#log_fmt_xml) (Structured format).
    - [JSON](#log_fmt_json) (Structured format).
-4. [Other samples](#other-samples)
+4. [Memory dumps](#memory-dumps) Memory dumps may be used with any format.
+5. [Other samples](#other-samples)
    - [Two stream output](#two-stream-output)
    - [Thread ID and name](#thread-id-name)
-5. Additional Information
+6. Additional Information
    - A [guide](guide/guide.md) (markdown in the guide subdirectory)
 
 ## Getting started <a name="getting_started"></a>
@@ -272,6 +273,68 @@ Output message in json format.
   } ]
 }
 ```
+
+## Memory dumps <a name="memory-dumps"/>
+Regions of memory can be formatted to hex + ascii and appended to the user
+message in all the above formats.
+
+Instead of using log_info(...) and friends, log_memory(...) is available.
+
+With a channel set up with the debug format,
+```
+log_memory(LL_INFO, buf, sizeof(buf), "hello, %s", "world");
+```
+produces:
+```
+2020-08-17 21:08:38.418 INFO    log_mem.c:main:55 hello, world
+  0000  00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f  ................
+  0016  10 11 12 13 14 15 16 17 18 19 1a 1b 1c 1d 1e 1f  ................
+  0032  20 21 22 23 24 25 26 27 28 29 2a 2b 2c 2d 2e 2f   !"#$%&'()*+,-./
+  0048  30 31 32 33 34 35 36 37 38 39 3a 3b 3c 3d 3e 3f  0123456789:;<=>?
+  0064  40 41 42 43 44 45 46 47 48 49 4a 4b 4c 4d 4e 4f  @ABCDEFGHIJKLMNO
+  0080  50 51 52 53 54 55 56 57 58 59 5a 5b 5c 5d 5e 5f  PQRSTUVWXYZ[\]^_
+  0096  60 61 62 63 64 65 66 67 68 69 6a 6b 6c 6d 6e 6f  `abcdefghijklmno
+  0112  70 71 72 73 74 75 76 77 78 79 7a 7b 7c 7d 7e 7f  pqrstuvwxyz{|}~.
+  0128  80 81 82 83 84 85 86 87 88 89 8a 8b 8c 8d 8e 8f  ................
+  0144  90 91 92 93 94 95 96 97 98 99 9a 9b 9c 9d 9e 9f  ................
+  0160  a0 a1 a2 a3 a4 a5 a6 a7 a8 a9 aa ab ac ad ae af  ................
+  0176  b0 b1 b2 b3 b4 b5 b6 b7 b8 b9 ba bb bc bd be bf  ................
+  0192  c0 c1 c2 c3 c4 c5 c6 c7 c8 c9 ca cb cc cd ce cf  ................
+  0208  d0 d1 d2 d3 d4 d5 d6 d7 d8 d9 da db dc dd de df  ................
+  0224  e0 e1 e2 e3 e4 e5 e6 e7 e8 e9 ea eb ec ed ee ef  ................
+  0240  f0 f1 f2 f3 f4 f5 f6 f7 f8 f9 fa fb fc fd fe ff  ................
+  0256  00 01 02 03 04 05 06 07                          .
+```
+The memory dump is appended to the normal user message, so the whole thing is
+enclosed in a single message in XML or JSON formats.
+
+With a channel set up with the JSON format,
+```
+log_memory(LL_INFO, buf + 0x20, 24, "hello, %s", "world");
+```
+produces:
+```
+{
+  "records" : [  {
+    "isoDateTime" : "2020-08-17T21:08:38.418348026-04:00",
+    "timespec" : {
+      "sec" : 1597712918,
+      "nsec" : 418348026
+    },
+    "sequence" : 1,
+    "logger" : "tinylogger",
+    "level" : "INFO",
+    "file" : "log_mem.c",
+    "function" : "main",
+    "line" : 61,
+    "threadId" : 502942,
+    "threadName" : "log_mem",
+    "message" : "hello, world\n  0000  20 21 22 23 24 25 26 27 28 29 2a 2b 2c 2d 2e 2f   !\"#$%&'()*+,-./\n  0016  30 31 32 33 34 35 36 37                          01234567        "
+  } ]
+}
+```
+
+The hex dump samples were produced by a demo program called log_mem.c
 
 ## Other Samples <a name="other-samples"/>
 ### Messages simultaneously logged by systemd/journalctl and to debug file <a name="two-stream-output"/>
