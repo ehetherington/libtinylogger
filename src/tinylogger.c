@@ -74,11 +74,12 @@ static struct log_config {
 
 /**
  * @fn void log_set_pre_init_level(LOG_LEVEL log_level)
- * @brief Before log_init() is called, log messages are passed to the stderr.
+ * @brief Before any channel is configured, log messages are passed to the
+ *        stderr.
  *
- * The * minimum log level may be set using log_set_pre_int_level(LOG_LEVEL).
- * This is useful at startup time to debug command line parsing before the
- * final logging configuration is known.
+ * The minimum pre-init log level may be set using
+ * log_set_pre_int_level(LOG_LEVEL). This is useful at startup time to debug
+ * command line parsing before the final logging configuration is known.
  *
  * @param log_level the minimum level to output.
  */
@@ -189,7 +190,7 @@ void log_wrap_records(bool yes_no) {
  * @param b the subtrahend
  * @param result a - b
  */
-inline void timespec_diff(struct timespec *a, struct timespec *b,
+static inline void timespec_diff(struct timespec *a, struct timespec *b,
 	struct timespec *result) {
 	result->tv_sec  = a->tv_sec  - b->tv_sec;
 	result->tv_nsec = a->tv_nsec - b->tv_nsec;
@@ -365,7 +366,7 @@ int log_mem(int const level, void const * const buf, int const len,
 #endif
 
 	/* format the memory region */
-	char *hex = hexformat(buf, len);
+	char *hex = log_hexformat(buf, len);
 	if (hex == NULL) return -1;
 
 	/* format the user message contents */
