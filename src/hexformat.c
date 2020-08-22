@@ -162,7 +162,7 @@ static void fmt_line(unsigned char const *buf, size_t const len, char *line_buf)
 	"  0000           <no content - zero length buffer>                       \n"
 
 /**
- * @fn char *hexformat(void const * const mem, size_t const len)
+ * @fn char *log_hexformat(void const * const mem, size_t const len)
  *
  * @brief Format a memory region to hex + ascii representation.
  *
@@ -173,7 +173,7 @@ static void fmt_line(unsigned char const *buf, size_t const len, char *line_buf)
  * zero, a "result" with an appropriate message is returned. If the malloc()
  * fails, NULL is returned. All non-null results must be freed with free().
  */
-char *hexformat(void const * const mem, size_t const len) {
+char *log_hexformat(void const * const mem, size_t const len) {
 	unsigned char const * const u_mem = mem;	/* avoid a cast */
 	char *hex_buf;
 	char *current_ptr;
