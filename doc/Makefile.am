@@ -87,7 +87,7 @@ markdown: fixmarkdown
 	touch markdown
 
 tarball: gendocs
-	tar cf $(top_srcdir)/$(PACKAGE)-$(VERSION)-doc.tar.gz html
+	tar cf $(top_srcdir)/$(PACKAGE)-$(VERSION)-doc.tar.gz html man latex
 
 install-data-local: gendocs
 
