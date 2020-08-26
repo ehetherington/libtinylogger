@@ -62,12 +62,12 @@ Fills a buffer with 256 + 8 bytes and then prints the "hex dump" with ascii
 with a single log_memory() call.
 
 ### logrotate.c
-The library has support for logrotate behaviour.
+The library has support for logrotate behavior.
 
 A background thread may be started that listens for an external signal to be
 sent from logrotate to perform a flush/close and re-open of the log file.
 
-This is simualted by the program itself sending the signal that logrotate would
+This is simulated by the program itself sending the signal that logrotate would
 normally send.
 
 Or, the program could perform the operation by itself (without starting that

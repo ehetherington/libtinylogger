@@ -28,7 +28,7 @@ eth0     AF_PACKET (17)
 
 ### log_fmt_systemd <a name="log_fmt_systemd">
 Output messages in systemd compatible format. Systemd log messages have their
-log level inclosed in angle brackets prepended to the user message. When viewed
+log level enclosed in angle brackets prepended to the user message. When viewed
 through journalctl, timestamps are added, so only the log level and user message
 are needed.
 
@@ -54,7 +54,7 @@ number, and finally the message.
 ### log_fmt_debug_tid <a name="log_fmt_debug_tid">
 log_fmt_debug with thread id added
 ```
-2020-05-25 17:28:17.011 DEBUG   65623 test-logger.c:main:110 eth0     AF_PACKET (17)
+2020-05-25 17:28:17.011 DEBUG   65623 test-logger.c:main:110 nth0     AF_PACKET (17)
 ```
 
 ### log_fmt_debug_tname <a name="log_fmt_debug_tname">

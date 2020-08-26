@@ -14,11 +14,11 @@ So, to create them from a timespec:
 
 ```{.c}
 	struct timespec *ts;
-    long int time_millis;
-    long int time_nanos;
+	long int time_millis;
+	long int time_nanos;
 
-    time_millis = ts->tv_sec * 1000 + ts->tv_nsec / 1000000;
-    time_nanos = ts->tv_nsec % 1000000;
+	time_millis = ts->tv_sec * 1000 + ts->tv_nsec / 1000000;
+	time_nanos = ts->tv_nsec % 1000000;
 ```
 
 To create the values for the millis and nanos element

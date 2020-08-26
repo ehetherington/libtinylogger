@@ -1,7 +1,7 @@
 ## Guide to extra information
 
 [quick-start](./quick-start.md)
-Using the main autotools build configuation may be distracting. A
+Using the main autotools build configuration may be distracting. A
 non-autotools build environment is provided that is sufficient for most
 purposes.
 

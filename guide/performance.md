@@ -105,7 +105,7 @@ listed above.
 exceeded the real time, meaning it averaged more than 1 core to support the
 test.
 
-- 1000 threads was initialy used on the xw6600. When it was tried on the
+- 1000 threads was initially used on the xw6600. When it was tried on the
 Raspberry Pi, it failed for the following reason:
 ```
 pthread create: Resource temporarily unavailable

@@ -82,7 +82,7 @@ on [StackOverflow](https://stackoverflow.com) illustrating that method.
 Your app doesn't actually need to be a daemon to take advantage of logrotate.
 Any long term log file may be managed by logrotate. logrotate can take care
 of periodically saving, compressing and keeping a certain number of old files.
-In order to take advangage of those services, all you need to do is listen for
+In order to take advantage of those services, all you need to do is listen for
 a signal from logrotated, and flush and close current log, and restart logging.
 This software does that for you.
 

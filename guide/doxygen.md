@@ -19,19 +19,17 @@ I believe that doxygen was available through the normal repos prior to
 
 It took me a bit to track down what repo provided doxygen. I didn't record
 the procedure I used, but the final results are:
-
-On my system, 'sudo dnf list | grep doxygen' shows:
-
 ```
+$ sudo dnf list | grep doxygen
 doxygen.x86_64                                       1:1.8.14-12.el8                                   @codeready-builder-for-rhel-8-x86_64-rpms
 doxygen-doxywizard.x86_64                            1:1.8.14-12.el8                                   @codeready-builder-for-rhel-8-x86_64-rpms
 doxygen-latex.x86_64                                 1:1.8.14-12.el8                                   @codeready-builder-for-rhel-8-x86_64-rpms
 ```
-This shows that I installed the doxygen.x86, doxygen-doxywizard.x86_64,
-and doxygen-latex.x86_64 packages from the codeready-builder-for-rhel-8-x86_64-rpms
-repository.
+This shows the doxygen.x86_64, doxygen-doxywizard.x86_64,
+and doxygen-latex.x86_64 packages from the
+codeready-builder-for-rhel-8-x86_64-rpms repository.
 
-To skip to the chase, I believe the following command should enable that repo:
+I believe the following command should enable that repo:
 ```
 # subscription-manager repos --enable=codeready-builder-for-rhel-8-x86_64-rpms
 ```
@@ -44,7 +42,7 @@ Then install the packages:
 # dnf install doxygen.x86 doxygen-doxywizard.x86_64 doxygen-latex.x86_64
 ```
 #### Info from [bugzilla.redhat.com](https://bugzilla.redhat.com/show_bug.cgi?id=1765846)
-This was the recommended method. I tried the it first, but I think I had a hard time finding the
+This was the recommended method. I tried it first, but I think I had a hard time finding the
 proper name of the package.
 
 ```
