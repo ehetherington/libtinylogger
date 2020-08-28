@@ -1,4 +1,4 @@
-## libTinyLogger (SYFLIC)
+## libTinyLogger
 
 ### Small Yet Flexible Logger In C.
 
@@ -13,8 +13,9 @@ It may be compiled directly with a target program, or installed as a library.
 - Messages are filtered by a log level.
 - It produces output in a few different formats.
   - Pre-defined formats for systemd, standard and debug use.
-  - User defined formatters are possible.
+  - Elapsed time can be used in place of date/time
   - Structured output in XML and JSON
+  - User defined formatters are possible.
 - multi-thread support, with formats that print thread id and name
 - logrotate support. Flushes, closes, and opens a log file on receipt of a
   signal from logrotate.
@@ -69,7 +70,7 @@ $ make
 $ DESTDIR=/tmp/destdir make install
 ```
 
-libtinylogger static and dynamic librarys will be installed in $DESTDIR/usr/local/lib
+libtinylogger static and dynamic libraries will be installed in $DESTDIR/usr/local/lib
 and the header file will be installed into $DESTDIR/usr/local/include.
 
 If you have doxygen, man pages can be made and installed into /usr/local/man.
@@ -152,7 +153,7 @@ eth0     AF_PACKET (17)
 
 ### systemd <a name="log_fmt_systemd">
 Output messages in systemd compatible format. Systemd log messages have their
-log level inclosed in angle brackets prepended to the user message. When viewed
+log level enclosed in angle brackets prepended to the user message. When viewed
 through journalctl, timestamps are added, so only the log level and user message
 are needed.
 
@@ -308,7 +309,8 @@ produces:
 The memory dump is appended to the normal user message, so the whole thing is
 enclosed in a single message in XML or JSON formats.
 
-With a channel set up with the JSON format,
+With a channel set up with the JSON format, logging a 24 byte slice (for
+brevity) of that memory region,
 ```
 log_memory(LL_INFO, buf + 0x20, 24, "hello, %s", "world");
 ```
