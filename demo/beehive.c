@@ -364,13 +364,18 @@ int main(int argc, char *argv[]) {
 
 	printf("expecting %d threads, %d + 2 records per thread = %d total records\n",
 		N_THREADS, N_LOOPS, N_THREADS * (N_LOOPS + 2));
+	
+	status = EXIT_SUCCESS;
 
 	// scanners are expecting log_fmt_tall
 	// xml and json are verified by external programs
 	if ((formatter == log_fmt_tall) && do_verify) {
 		bool success = scan_file(filename);
 		printf("Verify %s\n", success ? "succeeded" : "failed");
+		if (!success) {
+			status = EXIT_FAILURE;
+		}
 	}
 
-	return EXIT_SUCCESS;
+	return status;
 }

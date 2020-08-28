@@ -31,8 +31,10 @@ DOC_DIRS="$DOC_DIR $GUIDE_DIR"
 
 # directories to remove for "clean"
 CLEAN_DIRS="$LIB_DIR $INC_DIR $LOGGER_DIR $EXAMPLE_DIR $DEMO_LIB_DIR $DOC_DIRS"
+CLEAN_FILES="check-symbols.sh regression.sh"
 
 # where to find the original sources
+# the script is in the quick-start directory just below the top
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 TOP_SRCDIR="$( dirname "$SCRIPT_DIR" )"
 
@@ -48,7 +50,7 @@ if [ $# = 1 ]; then
 	if [ "$1" = clean ]; then 
 		cd $SCRIPT_DIR
 		echo "cleaning $SCRIPT_DIR"
-		rm -rf $CLEAN_DIRS
+		rm -rf $CLEAN_DIRS $CLEAN_FILES
 		exit $?
 	fi
 fi
@@ -85,6 +87,10 @@ if [ "$SCRIPT_DIR" != "$( pwd )" ]; then
 	cp "$SCRIPT_DIR"/setup.sh .
 	cp "$SCRIPT_DIR"/Doxyfile .
 fi
+
+# some utils that may be useful
+cp "$TOP_SRCDIR"/utils/check-symbols.sh .
+cp "$TOP_SRCDIR"/utils/regression.sh .
 
 # copy the guide markdown
 mkdir -p $GUIDE_DIR
