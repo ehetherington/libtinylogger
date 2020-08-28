@@ -31,3 +31,6 @@ RHEL-8.1 took some digging, Raspbian was much easier.
 
 [daemon hints](./daemon-hints.md)
 Some hints to set up use in a daemon.
+
+[public-symbols](./public-symbols.md)
+The list of libtinylogger public symbols.
