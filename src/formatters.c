@@ -274,7 +274,7 @@ int log_fmt_systemd(FILE *stream, int sequence, struct timespec *ts, int level,
 int log_fmt_standard(FILE *stream, int sequence, struct timespec *ts, int level,
 	const char *file, const char *function, int line, char *msg) {
 	char date[TIMESTAMP_LEN];
-	// (-7 - let critical and emergency stick out, Use -9 to align them all)
+	// (-7 reserve space for all level names to align the messages)
 	log_format_timestamp(ts, SP_NONE, date, sizeof(date));
 	return fprintf(stream, "%s %-7s %s\n",
 		date, log_labels[level].english, msg);
@@ -305,7 +305,7 @@ int log_fmt_debug(FILE *stream, int sequence, struct timespec *ts, int level,
 	const char *file, const char *function, int line, char *msg) {
 	char date[TIMESTAMP_LEN];
 	log_format_timestamp(ts, SP_MILLI, date, sizeof(date));
-	// (-7 - let critical and emergency stick out, Use -9 to align them all)
+	// (-7 reserve space for all level names to align the messages)
 	return fprintf(stream, "%s %-7s %s:%s:%d %s\n",
 		date, log_labels[level].english, file, function, line, msg);
 }
