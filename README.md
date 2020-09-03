@@ -2,10 +2,19 @@
 
 ### Small Yet Flexible Logger In C.
 
-This is a small logging facility intended for small Linux projects. It logs
-messages from a single process to a file and/or a stream such as stderr.
+This is a small logging library for small Linux projects. It logs messages from
+a single process to a file and/or a stream such as stderr. It has many message
+formats, including JSON and XML.
 
-It may be compiled directly with a target program, or installed as a library.
+Thread safe. There are message formats with thread id and/or thread name
+provided.
+
+Custom message formats may be created without modifying the library. A timestamp
+formatter with second, millisecond, microsecond and nanosecond resolution is
+provided.
+
+It may be compiled directly with a target program, or installed as a shared
+library.
 
 ### Features:
 
@@ -16,8 +25,8 @@ It may be compiled directly with a target program, or installed as a library.
   - Elapsed time can be used in place of date/time
   - Structured output in XML and JSON
   - User defined formatters are possible.
-- multi-thread support, with formats that print thread id and name
-- logrotate support. Flushes, closes, and opens a log file on receipt of a
+- thread safe, with formats that print thread id and name
+- logrotate support. Flushes, closes, and re-opens a log file on receipt of a
   signal from logrotate.
 - tested on 64 and 32 bit Linux
   - RHEL 8.1 4.18.0-193.1.2.el8_2.x86_64 
@@ -30,6 +39,7 @@ It may be compiled directly with a target program, or installed as a library.
    - [Two streams](#two-streams)
 3. [Output formats](#output-formats)
    - [basic](#log_fmt_basic)
+   - [systemd](#log_fmt_systemd)
    - [standard](#log_fmt_standard)
    - [debug](#log_fmt_debug)
    - [debug_tid](#log_fmt_debug_tid)
@@ -61,18 +71,21 @@ the library. Additional info in [quick-start](guide/quick-start.md).
 
 ### Installation as a library is optional
 This is an Autotools package. For installation into /usr/local/lib,
-installation is very easy. To give it a test drive, 
-
+installation is very easy. To see what get installed and where, install it in
+"alternate root" by specifying DESTDIR when installing:
 ```
 $ autoreconf -i
 $ ./configure
 $ make
 $ DESTDIR=/tmp/destdir make install
 ```
-
 libtinylogger static and dynamic libraries will be installed in $DESTDIR/usr/local/lib
 and the header file will be installed into $DESTDIR/usr/local/include.
 
+To actually install,
+```
+$ sudo make install
+```
 If you have doxygen, man pages can be made and installed into /usr/local/man.
 
 ## Examples <a name="examples"></a>
@@ -173,25 +186,25 @@ Output messages with timestamp, level, source code file, function, and line
 number, and finally the message.
 
 ```
-2020-05-25 17:28:17.011 DEBUG   test-logger.c:main:110 eth0     AF_PACKET (17)
+2020-05-25 17:28:17.011 INFO   test-logger.c:main:110 eth0     AF_PACKET (17)
 ```
 
 ### debug_tid <a name="log_fmt_debug_tid">
 log_fmt_debug with thread id added
 ```
-2020-05-25 17:28:17.011 DEBUG   65623 test-logger.c:main:110 eth0     AF_PACKET (17)
+2020-05-25 17:28:17.011 INFO   65623 test-logger.c:main:110 eth0     AF_PACKET (17)
 ```
 
 ### debug_tname <a name="log_fmt_debug_tname">
 log_fmt_debug with thread name added
 ```
-2020-05-25 17:28:17.011 DEBUG   thread_2 test-logger.c:main:110 eth0     AF_PACKET (17)
+2020-05-25 17:28:17.011 INFO   thread_2 test-logger.c:main:110 eth0     AF_PACKET (17)
 ```
 
 ### debug_tall <a name="log_fmt_debug_tall">
 log_fmt_debug with thread id and thread name added
 ```
-2020-05-25 17:28:17.011 DEBUG   65623:thread_2 test-logger.c:main:110 eth0     AF_PACKET (17)
+2020-05-25 17:28:17.011 INFO   65623:thread_2 test-logger.c:main:110 eth0     AF_PACKET (17)
 ```
 
 ### elapsed_time <a name="log_fmt_elapsed_time">
@@ -237,6 +250,9 @@ Output messages in java.util.logging.XMLFormatter format.
 </log>
 ```
 ### JSON <a name="log_fmt_json">
+There is a companion [reader](https://github.com/ehetherington/JSON-LogReader)
+for files produced in the JSON format.
+
 Output message in json format.
 
 ```

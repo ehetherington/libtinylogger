@@ -18,6 +18,13 @@ java.util.logging flavored ones.
 [performance](./performance.md)
 A test of the number of messages per second written to a file.
 
+[json-formatter](./json-formatter.md)
+A JSON output formmatter has been provided.
+
+[json-reader](./json-reader.md)
+A reader for logs produced in JSON format by libtinylogger. It contains a
+Java data model for reading those log files.
+
 [xml_formatter](./xml_formatter.md)
 An XML output formmatter has been provided that is compatible with the
 java.util.logging.XMLFormatter format.

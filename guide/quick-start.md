@@ -15,7 +15,7 @@ examples.
 ### making the docs
 If you have Doxygen installed, the docs can be built with "make docs". Doxygen
 will complain a little, as the links in the markdown files will be broken. They
-are expecting a different layout. The html output will be available in
+are expecting a different layout. The html output will be available via
 doc/html/index.html.
 
 ### Proceeding from here...

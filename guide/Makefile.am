@@ -8,4 +8,6 @@ EXTRA_DIST = \
 	performance.md \
 	public-symbols.md \
 	quick-start.md \
-	xml_formatter.md
+	json_formatter.md \
+	xml_formatter.md \
+	json-reader.md
