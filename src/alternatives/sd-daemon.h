@@ -15,10 +15,7 @@
 #ifndef _ALT_SYSTEMD_SD_DAEMON_H
 #define _ALT_SYSTEMD_SD_DAEMON_H
 
-
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
-#define LOG_CH_COUNT 2  /**< The number of channels supported. */
-
 
 /*
   Log levels for usage on stderr:
