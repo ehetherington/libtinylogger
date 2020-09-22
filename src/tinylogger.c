@@ -99,9 +99,10 @@ void log_set_pre_init_level(LOG_LEVEL log_level) {
  * The logrotate thread. It reads the config.
  */
 volatile struct _logChannel log_channels[LOG_CH_COUNT] = {
-	{LL_OFF,	NULL,	NULL, false, NULL},
-	{LL_OFF,	NULL,	NULL, false, NULL},
+	{LL_OFF,	NULL,	NULL, false, NULL, false, 0, NULL, NULL},
+	{LL_OFF,	NULL,	NULL, false, NULL, false, 0, NULL, NULL},
 };
+//	{LL_OFF,	NULL,	NULL, false, NULL},
 
 /**
  * @fn LOG_LEVEL log_constrain_level(LOG_LEVEL level)
@@ -141,15 +142,13 @@ bool log_select_clock(clockid_t clock_id) {
 		case CLOCK_REALTIME_COARSE:
 		case CLOCK_MONOTONIC_COARSE:
 		#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,39)
-		case CLOCK_BOOTTIME: {
-			log_config.clock_id = clock_id;
-			// get a timestamp
-			if (clock_gettime(log_config.clock_id, &log_config.ts) == 0) {
-			}
-		};
+		case CLOCK_BOOTTIME:
 		#endif
 		#endif
 		#endif
+		log_config.clock_id = clock_id;
+		// get a timestamp for the elapsed time format
+		clock_gettime(log_config.clock_id, &log_config.ts);
 	}
 	return log_config.clock_id == clock_id;
 }
@@ -222,7 +221,7 @@ void log_format_delta(struct timespec *ts, SEC_PRECISION precision, char *buf, i
 
     if ((buf == NULL) || (len < TIMESTAMP_LEN)) {
         fprintf(stderr,
-            "log_format_timestamp: internal error - provide %d char buf\n",
+            "log_format_delta: internal error - provide %d char buf\n",
                 TIMESTAMP_LEN);
         return;
     }
