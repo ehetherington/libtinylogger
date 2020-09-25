@@ -222,7 +222,7 @@ eth0     AF_PACKET (17)
  */
 int log_fmt_basic(FILE *stream, int sequence, struct timespec *ts, int level,
 	const char *file, const char *function, int line, char *msg) {
-	return fprintf(stderr, "%s\n", msg);
+	return fprintf(stream, "%s\n", msg);
 }
 
 /**
