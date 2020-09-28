@@ -1,6 +1,6 @@
 # Performance
 
-# Measurement of log message CPU time
+# Measurement of message time (nanoseconds per message)
 
 ## Test platforms
 - Raspberry Pi 4b
@@ -23,7 +23,8 @@ format, 1000 log messages were were written to /dev/null. The time/message value
 was computed by dividing the total elapsed time by the number of messages.
 
 As other processes could affect this approach, each of these test was repeated
-50 times. The minimum, median, mean and maximum times were found.
+50 times, for a total of 50,000 messages per format. The minimum, median, mean
+and maximum times were found.
 
 ## Results
 
