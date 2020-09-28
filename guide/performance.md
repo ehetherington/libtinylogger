@@ -1,7 +1,8 @@
-## Performance
+# Performance
 
-### Messages per second logging to file
-#### Test platforms
+# Measurement of log message CPU time
+
+## Test platforms
 - Raspberry Pi 4b
   - ARMv7 Processor rev 3 (v7l) - Broadcom BCM2711B0 (Cortex A-72) - 1.5 GHz Quad core
   - 4G ram
@@ -15,105 +16,104 @@
     - sdb   disk  931.5G WDC WD1001FALS-0
     - sdc   disk    1.8T ST2000DM008-2FR1
 
-#### Test description.
-Constants:
-- N_THREADS
-- N_MESSAGES
-- MAX_SLEEP
+## Test description.
 
-Logging to a file is configured.
-N_THREADS threads are created. Each thread will log N_MESSAGES messages.
-Between writing messages, the threads sleep a random amount of time from 0 to
-MAX_SLEEP microseconds.
+A simple elapsed time test of each of the available formats was run. For each
+format, 1000 log messages were were written to /dev/null. The time/message value
+was computed by dividing the total elapsed time by the number of messages.
 
-After the output file was generated, it was verified that each message
-conformed to the output format, and that the correct number of messages
-were written.
+As other processes could affect this approach, each of these test was repeated
+50 times. The minimum, median, mean and maximum times were found.
 
-#### Source:
+## Results
 
-[beehive.c](demo/beehive.c)
+All times are in nanoseconds.
 
-#### Sample file output:
+### XW6600
 
-```
-2020-06-13 02:13:45.524 INFO      7213:thread_97 sleeping 750 microseconds, s/n=3994, tid=7213
-2020-06-13 02:13:45.524 INFO      7233:thread_117 sleeping 33 microseconds, s/n=3899, tid=7233
-2020-06-13 02:13:45.524 INFO      7203:thread_87 sleeping 870 microseconds, s/n=3948, tid=7203
-2020-06-13 02:13:45.524 INFO      7233:thread_117 sleeping 301 microseconds, s/n=3900, tid=7233
-2020-06-13 02:13:45.524 INFO      7169:thread_53 sleeping 838 microseconds, s/n=3930, tid=7169
-2020-06-13 02:13:45.524 INFO      7321:thread_205 sleeping 345 microseconds, s/n=3914, tid=7321
-2020-06-13 02:13:45.524 INFO      7256:thread_140 sleeping 222 microseconds, s/n=3837, tid=7256
-2020-06-13 02:13:45.524 INFO      7236:thread_120 sleeping 561 microseconds, s/n=3948, tid=7236
-2020-06-13 02:13:45.525 INFO      7266:thread_150 sleeping 12 microseconds, s/n=3865, tid=7266
-2020-06-13 02:13:45.525 INFO      7233:thread_117 sleeping 241 microseconds, s/n=3901, tid=7233
-2020-06-13 02:13:45.525 INFO      7120:thread_4 sleeping 378 microseconds, s/n=3968, tid=7120
-2020-06-13 02:13:45.525 INFO      7256:thread_140 sleeping 289 microseconds, s/n=3838, tid=7256
-2020-06-13 02:13:45.525 INFO      7266:thread_150 sleeping 6 microseconds, s/n=3866, tid=7266
-2020-06-13 02:13:45.525 INFO      7352:thread_236 sleeping 37 microseconds, s/n=3982, tid=7352
-2020-06-13 02:13:45.525 INFO      7321:thread_205 sleeping 527 microseconds, s/n=3915, tid=7321
-2020-06-13 02:13:45.525 INFO      7324:thread_208 sleeping 317 microseconds, s/n=3879, tid=7324
-2020-06-13 02:13:45.525 INFO      7266:thread_150 sleeping 47 microseconds, s/n=3867, tid=7266
-2020-06-13 02:13:45.525 INFO      7352:thread_236 sleeping 181 microseconds, s/n=3983, tid=7352
-2020-06-13 02:13:45.525 INFO      7213:thread_97 sleeping 241 microseconds, s/n=3995, tid=7213
-2020-06-13 02:13:45.525 INFO      7233:thread_117 sleeping 152 microseconds, s/n=3902, tid=7233
-2020-06-13 02:13:45.525 INFO      7266:thread_150 sleeping 153 microseconds, s/n=3868, tid=7266
-2020-06-13 02:13:45.525 INFO      7256:thread_140 sleeping 46 microseconds, s/n=3839, tid=7256
-2020-06-13 02:13:45.525 INFO      7120:thread_4 sleeping 629 microseconds, s/n=3969, tid=7120
-```
-
-Resulting file info:
-```
-$ wc /tmp/hive.log
- 1000500  9004750 97213984 /tmp/hive.log
-```
-
-#### Results - no line buffering
-
- param         | XW6600 | Raspberry Pi 4b
----------------|--------|----------------
-N_THREADS      | 250    | 250
-N_MESSAGES     | 4000   | 4000
-MAX_SLEEP      | 1000   | 1000
-Total Messages | 1,000,000 | 1,000,000
-real time      | 0m15.689s | 0m16.733s
-user time      | 0m9.551s  | 0m10.681s
-sys time       | 0m14.218s | 0m17.121s
-messages/second | 63.7 k | 59.9 k
-MBytes/sec     | 6.2       | 5.8
+ Format             |  min   | median |  mean  |   max   
+--------------------|--------|--------|--------|---------
+log_fmt_basic       |    284 |    286 |    286 |     311 
+log_fmt_systemd     |    336 |    339 |    339 |     344 
+log_fmt_standard    |   1371 |   1386 |   1390 |    1565 
+log_fmt_debug       |   1609 |   1629 |   1630 |    1678 
+log_fmt_debug_tid   |   3617 |   3652 |   3655 |    3837 
+log_fmt_debug_tname |   3734 |   3769 |   3772 |    3870 
+log_fmt_debug_tall  |   5257 |   5309 |   5312 |    5579 
+log_fmt_xml         |   6896 |   6938 |   6938 |    7071 
+log_fmt_json        |   9159 |   9229 |   9229 |    9535 
 
 
-#### Results - line buffering (line feed causes write to file)
+### Raspberry Pi
 
- param         | XW6600 | Raspberry Pi 4b
----------------|--------|----------------
-N_THREADS      | 250    | 250
-N_MESSAGES     | 4000   | 4000
-MAX_SLEEP      | 1000   | 1000
-Total Messages | 1,000,000 | 1,000,000
-real time      | 0m23.077s | 0m28.207s
-user time      | 0m10.796s | 0m12.486s
-sys time       | 0m19.133s | 0m26.316s
-messages/second | 43.3 k | 38.0 k
-MBytes/sec     | 4.2       | 3.4
+ Format             |  min   | median |  mean  |   max   
+--------------------|--------|--------|--------|---------
+log_fmt_basic       |   1004 |   1014 |   1077 |    2727 
+log_fmt_systemd     |   1088 |   1098 |   1098 |    1148 
+log_fmt_standard    |   2979 |   3012 |   3019 |    3501 
+log_fmt_debug       |   3411 |   3433 |   3437 |    4007 
+log_fmt_debug_tid   |   3999 |   4032 |   4036 |    4671 
+log_fmt_debug_tname |   4169 |   4219 |   4228 |    4897 
+log_fmt_debug_tall  |   4764 |   4808 |   4810 |    5547 
+log_fmt_xml         |   9762 |   9881 |   9892 |   11406 
+log_fmt_json        |  10820 |  11002 |  11038 |   12555 
 
-#### Notes
-- The time to read and check the output was included in the times
-listed above.
 
-- No line buffering on the Raspberry Pi was the only case where the sys time
-exceeded the real time, meaning it averaged more than 1 core to support the
-test.
+## Results observations
 
-- 1000 threads was initially used on the xw6600. When it was tried on the
-Raspberry Pi, it failed for the following reason:
-```
-pthread create: Resource temporarily unavailable
-```
-I reduced the thread count to 500, and it worked the first time, but not
-the second. 250 threads works reliably.
+The median was less than or equal to the mean in all cases, but also very close,
+This means that very few large outliers were encountered in these runs.
+There were other runs where there were very large maximums, and apparently
+several of them, and the mean was noticably larger than the mean. Since the min,
+median and mean measurements in these runs were all very close, they seem
+reliable.
 
-- MBytes/sec was an afterthought.
+### XW6600
+In the following discussion, the results from the XW6600 are considered.
+
+A timestamp (`clock_gettime()`) is taken for each message, whether or not the
+message format includes a timestamp string.
+
+The `basic` and `systemd` formats do no formatting of the timestamp, but still
+include the `clock_gettime()` common to all messages. So ~0.3 microseconds is
+the baseline time that the other formats add to.
+
+The `standard` format adds formatting of the timestamp with `localtime_r()` and
+snprintf(). That seems to account for about 1.1 microseconds.
+
+The `debug_tid` and `debug_tname` formats add either a lookup of thread name
+(via `syscall(__NR_gettid`)) or thread id (via `pthread_getname_np`), They seem
+to add about 2.1 microsends each. The `tall` format adds both.
+
+The `xml` and `json` structured formats add lots of formatting, for an
+additional 2.0 or 4.0 microseconds.
+
+### Raspberry Pi
+The RaspberryPi results were slower, as expected, mostly due to the 1.5 MHz
+processor. But there is an immediate jump of about 1 microsecond over the
+XW6600 results. This prompted measurement of the `clock_gettime()` and
+`localtime_r()` functions. Unexpectedly, the `clock_gettime()` function went
+from 57 microseconds on the XW660 to 593 microseconds on the RaspberryPi. And
+`localtime_r()` function also suffered a disproportional increase.
+
+### Preliminary investigation into time function overhead
+
+#### XW6600
+
+ Function                       | time
+--------------------------------|------
+clock_gettime()                 | 57
+clock_gettime() + localtime_r() | 705
+clock_gettime() + localtime_r() | 486
+
+#### Raspberry Pi
+
+ Function                       | time
+--------------------------------|------
+clock_gettime()                 | 593
+clock_gettime() + localtime_r() | 2296
+clock_gettime() + localtime_r() | 981
+
+Further investigation will follow.
 
 [guide](./guide.md)
-
