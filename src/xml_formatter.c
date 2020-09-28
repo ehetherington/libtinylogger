@@ -218,10 +218,12 @@ int log_do_xml_tail(FILE *stream) {
  * @param level the log level to print
  * @param file the name of the file to print
  * @param function the name of the function to print
- * @param line the line number to print
+ * @param line the line number to print (unused)
  * @param msg the actual use message to print
  * @return the number of characters written.
  */
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-parameter"
 int log_fmt_xml(FILE *stream, int sequence, struct timespec *ts, int level,
     const char *file, const char *function, int line, char *msg) {
     char date[TIMESTAMP_LEN];
@@ -254,3 +256,4 @@ int log_fmt_xml(FILE *stream, int sequence, struct timespec *ts, int level,
 
 	return n_written;
 }
+#pragma GCC diagnostic push
