@@ -69,6 +69,38 @@ void check_append(char *filename) {
 }
 
 /**
+ * @fn timespec_diff(struct timespec *, struct timespec *, struct timespec *)
+ * @brief Compute the diff of two timespecs, that is a - b = result.
+ * @details copy of the static version in tinylogger.c
+ * @param a the minuend
+ * @param b the subtrahend
+ * @param result a - b
+ */
+void timespec_diff(struct timespec *a, struct timespec *b,
+    struct timespec *result) {
+    result->tv_sec  = a->tv_sec  - b->tv_sec;
+    result->tv_nsec = a->tv_nsec - b->tv_nsec;
+    if (result->tv_nsec < 0) {
+        if (result->tv_sec >= 0) --result->tv_sec;
+        result->tv_nsec += 1000000000L;
+    }
+}
+
+/**
+ * @fn long long get_time_nanos(struct timespec *ts)
+ * @brief convert timespec values to a long long
+ * @details With 64 bit integers, it overflows at around 232 years.
+ *          `long long` required to get 64 bits on 32 bit machines.
+ *
+ * @param ts the timespec to convert
+ * @return the number of nanoseconds it represents
+ */
+long long get_time_nanos(struct timespec *ts) {
+	long long nanos = 1000000000LL * ts->tv_sec + ts->tv_nsec;
+	return nanos;
+}
+
+/**
  * @fn char *get_proc_comm(void)
  *
  * @brief get the command name needed to match ps H -C command
