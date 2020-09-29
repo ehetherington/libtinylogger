@@ -92,6 +92,7 @@ function cleanup {
 # options for each example
 declare -A options
 options["beehive"]="-v"
+options["check-timezone"]="--pass"
 
 # run a test
 function run_test {
