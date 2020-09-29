@@ -60,7 +60,7 @@ pthread_mutex_t log_lock = PTHREAD_MUTEX_INITIALIZER;
 
 /**
  * @struct log_config
- * Parameters common to both channels.
+ * Parameters common to all (both) channels.
  */
 static struct log_config {
 	bool wrap_records;	/**< Include head/tail in XML/Json formats */
@@ -156,6 +156,7 @@ bool log_select_clock(clockid_t clock_id) {
 /**
  * @fn void log_wrap_records(bool yes_no)
  * @brief Emit opening and closing sequences for Json and XML logging.
+ *
  * Both the Json and XML output can enclose the stream of message records
  * in a "log" definition. Output can be constructed as a single log entity
  * or object, or as a sequence of individual record entities or objects.
@@ -265,30 +266,33 @@ void log_format_delta(struct timespec *ts, SEC_PRECISION precision, char *buf, i
  * @param format the printf format string (required)
  * @param ... the arguments to the format string
  *
- * @return 0 on success, -1 if the format was NULL
+ * @return 0 on success, -1 if the format was NULL, -2 if clock_gettime() error
  */
 int log_msg(int level,
 	const char *file, const char *function, const int line_number,
 	const char *format, ...) {
 	va_list	args;
+	struct timespec ts;
+	int status = 0;	// assume success
 #if MAX_MSG_SIZE == 0
 	char *msg;
 #else
 	char	msg[MAX_MSG_SIZE];		// user message
 #endif
-	struct timespec ts;
 
 	// make sure we have something to log
 	if (!format)	return -1;	// error - require format string
-	if (!*format)	return 0;	// silly format string, but let it go
+	if (!*format)	return 0;	// no msg - silly format string, but let it go
 
 	// lock the actual write(s) that may be through streams that may be
 	// managed by SIG_ROTATE
 	pthread_mutex_lock(&log_lock);
 
 	// get a timestamp
-	if (clock_gettime(log_config.clock_id, &ts) == 0) {
-		// TODO: report error
+	if (clock_gettime(log_config.clock_id, &ts) == -1) {
+		// drop the message, but return error status
+		status = -2;
+		goto unlock;
 	}
 
 	/* format the user message contents */
@@ -329,7 +333,7 @@ unlock:
 	free(msg);
 #endif
 
-	return 0;	// success
+	return status;	// 0 on success
 }
 
 
