@@ -63,6 +63,7 @@ void log_do_head(LOG_CHANNEL *);
 void log_do_tail(LOG_CHANNEL *);
 
 char *log_hexformat (void const * const addr, size_t const len);
+char *log_get_timezone(char *tz, size_t tz_len);
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
 TL_END_C_DECLS
