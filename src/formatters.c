@@ -198,8 +198,11 @@ void log_format_timestamp(struct timespec *ts, SEC_PRECISION precision,
 		do_offset(&tm, buf + end, len - end);
 	}
 }
-
 #pragma GCC diagnostic pop
+
+// many formats don't use all parameters
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-parameter"
 /**
  * @fn int log_fmt_basic(FILE *, int sequence, struct timespec *, int,
  * const char *, const char *, int, char *)
@@ -492,3 +495,4 @@ int log_fmt_elapsed_time(FILE *stream, int sequence, struct timespec *ts, int le
         file, function, line, msg);
 }
 
+#pragma GCC diagnostic pop
