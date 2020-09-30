@@ -123,7 +123,7 @@ static char *parseLocaltimeLink(char const * const localtime_file,
 	int	link_len;
 	struct stat sb;
 	char link[PATH_MAX + 1] = {0};
-	ino_t link_inode, target_inode;
+	ino_t link_inode;
 
 	// make sure it points to a zoneinfo file
 	if (! is_zoneinfo_file(localtime_file)) return NULL;
@@ -133,7 +133,6 @@ static char *parseLocaltimeLink(char const * const localtime_file,
 	if ((link_inode = get_inode(localtime_file)) == 0) {
 		return NULL;
 	}
-	printf("inode of localtime_file = %ld\n", link_inode);
 
 	// clear the results buffer
 	memset(buf, 0, buf_len);
@@ -178,9 +177,7 @@ static char *parseLocaltimeLink(char const * const localtime_file,
 	if ((zoneinfo_dir_end) == NULL) return NULL;
 
 	// make sure it is the same as the original link
-	target_inode = get_inode(zoneinfo_dir_end);
-	printf("original inode = %ld, zoneinfo_dir_end = %s, zoneinfo_path inode = %ld\n",
-		link_inode, zoneinfo_dir_end, target_inode);
+	if (link_inode != get_inode(zoneinfo_dir_end)) return NULL;
 	
 	// make sure the path actually fits into the result buffer
 	// leave room for the null termination
