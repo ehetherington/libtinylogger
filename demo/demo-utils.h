@@ -6,6 +6,8 @@
 #ifndef _DEMO_UTILS_H
 #define _DEMO_UTILS_H 1
 
+#include <time.h>
+
 /** from kernel/sched.h
  * includes null termination
  */
