@@ -42,6 +42,8 @@ note the 2 leading spaces and the treatment of partial last lines:
 
 #include "private.h" /**< make sure declaration and definition match */
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS
+
 /*
  * Each line has a variable length "buffer address" field, followed by a
  * fixed length format. The hex plus ascii regions are constant length.
@@ -98,6 +100,8 @@ note the 2 leading spaces and the treatment of partial last lines:
  *   The variable length offset field + the FIXED_LINE_LENGTH
  */
 #define MAX_LINE_LENGTH (MAX_ADDRESS_FIELD + FIXED_LINE_LENGTH)
+
+#endif /* DOXYGEN_SHOULD_SKIP_THIS */
 
 static char const digits[16] = {
 	'0', '1', '2', '3', '4', '5', '6', '7',
