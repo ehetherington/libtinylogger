@@ -10,7 +10,6 @@
 #include <unistd.h>
 #include <errno.h>
 #include <signal.h>
-#include <systemd/sd-daemon.h>
 
 #include <tinylogger.h>
 
@@ -35,7 +34,7 @@ static void log_messages() {
 }
 
 /**
- * @fn int main(int, char **)
+ * @fn int main(void)
  *
  * @various aspects of log levels
  *
@@ -51,7 +50,7 @@ static void log_messages() {
  * threshold from LL_INFO.
  *
  */
-int main(int argc, char **argv) {
+int main(void) {
 
 	/*
 	 * Test that get_log_level() properly looks up the level labels.
@@ -75,7 +74,7 @@ int main(int argc, char **argv) {
 		"finest"
 	};
 	printf("==== checking log_get_level() (using printf())...\n");
-	for (int n = 0; n < sizeof(test) / sizeof(test[0]); n++) {
+	for (size_t n = 0; n < sizeof(test) / sizeof(test[0]); n++) {
  		printf("%s = %d\n", test[n], log_get_level(test[n]));
 	}
 	printf("==== checking log_get_level() (using printf()) done\n\n");
