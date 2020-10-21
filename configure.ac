@@ -75,7 +75,7 @@ AC_SUBST([dll_storage_class], ["static "])
 AC_SUBST([dll_data_type], ["char *"])
 
 AC_CONFIG_FILES(Makefile src/Makefile \
-	demo/Makefile guide/Makefile doc/Makefile \
+	demo/Makefile guide/Makefile doc/Makefile utils/Makefile \
 	doc/doxygen.conf \
 	src/linked-list.h src/linked-list.c)
 

@@ -10,7 +10,7 @@ EXTRA_DIST += \
 	quick-start/Doxyfile \
 	quick-start/config.h
 
-SUBDIRS = src demo guide
+SUBDIRS = src demo guide utils
 
 if HAVE_DOXYGEN
 SUBDIRS += doc
@@ -21,4 +21,4 @@ endif
 # It re-runs the program with valgrind to check for memory leaks.
 # It takes a 3 or 4 minutes - please be patient.
 # Tests are run by "make check" or "make distcheck".
-TESTS = utils/regression.sh
+TESTS = utils/regression
