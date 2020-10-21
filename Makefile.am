@@ -1,14 +1,20 @@
 EXTRA_DIST = LICENSE README.md utils
 
 EXTRA_DIST += \
+	_config.yml \
 	quick-start/setup.sh \
 	quick-start/Makefile \
 	quick-start/Makefile.logger \
 	quick-start/Makefile.demo-lib \
 	quick-start/Makefile.examples \
+	quick-start/Doxyfile \
 	quick-start/config.h
 
-SUBDIRS = src demo guide doc
+SUBDIRS = src demo guide
+
+if HAVE_DOXYGEN
+SUBDIRS += doc
+endif
 
 # regression.sh isn't a unit test
 # It executes each demo program, and checks that it returns 0.
