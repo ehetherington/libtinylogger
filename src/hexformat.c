@@ -173,9 +173,9 @@ static void fmt_line(unsigned char const *buf, size_t const len, char *line_buf)
  * @param mem accept a pointer to anything
  * @param len the length of the memory region
  *
- * @return A malloc()'ed buffer with the results. If mem is NULL or len is
- * zero, a "result" with an appropriate message is returned. If the malloc()
- * fails, NULL is returned. All non-null results must be freed with free().
+ * @return A malloc(3)'ed buffer with the results. If mem is NULL or len is
+ * zero, a "result" with an appropriate message is returned. If the malloc(3)
+ * fails, NULL is returned. All non-null results must be freed with free(3).
  */
 char *log_hexformat(void const * const mem, size_t const len) {
 	unsigned char const * const u_mem = mem;	/* avoid a cast */
@@ -185,12 +185,14 @@ char *log_hexformat(void const * const mem, size_t const len) {
 	size_t num_done = 0;
 	size_t total_lines;
 
-	/* Sanity check buffer address. Use strdup() so that it can be free()'d. */
+	/* Sanity check buffer address. Use strdup(3) so that it can be free(3)'d.
+	 */
 	if (u_mem == NULL) {
 		return strdup(NULL_POINTER_MSG);
 	}
 
-	/* Sanity check buffer length. Use strdup() so that it can be free()'d. */
+	/* Sanity check buffer length. Use strdup(3) so that it can be free(3)'d.
+	 */
 	if (len < 1) {
 		return strdup(NO_CONTENT_MSG);
 	}
