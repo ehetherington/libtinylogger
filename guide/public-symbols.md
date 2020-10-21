@@ -28,6 +28,7 @@ log_fmt_xml
 log_format_delta
 log_format_timestamp
 log_get_level
+log_get_timezone
 log_hexformat
 log_labels
 log_lock
