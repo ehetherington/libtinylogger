@@ -25,8 +25,9 @@ autom4te.cache
 /install-sh
 /missing
 /stamp-h1
-# and
+# and...
 /libtool
+/config.h
 
 # https://www.gnu.org/software/libtool/
 
@@ -56,4 +57,3 @@ Makefile
 *.lo
 *.la
 .deps/
-
