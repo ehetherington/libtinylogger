@@ -41,6 +41,12 @@ int log_fmt_custom_1(FILE *stream, int sequence, struct timespec *ts, int level,
 	int rc;
 	struct tm tm;
 
+	// suppress "unused" warnings
+	(void) sequence;
+	(void) file;
+	(void) function;
+	(void) line;
+
 	// date
 	if (localtime_r(&(ts->tv_sec), &tm) == &tm) {
 		strftime(date, sizeof(date), "%B %d, %Y, %H:%M:%S", &tm);
@@ -82,6 +88,8 @@ int log_fmt_custom_2(FILE *stream, int sequence, struct timespec *ts, int level,
 	const char *file, const char *function, int line, char *msg) {
 	char date[32];
 	struct tm tm;
+
+	(void) sequence; // suppress "unused" warning
 
 	// date
 	if (localtime_r(&(ts->tv_sec), &tm) == &tm) {

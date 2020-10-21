@@ -44,7 +44,7 @@ int main(void) {
 	LOG_CHANNEL *ch;
 	char buf[256 + 8];
 
-	for (int n = 0; n < sizeof(buf); n++) {
+	for (size_t n = 0; n < sizeof(buf); n++) {
 		buf[n] = n;
 	}
 

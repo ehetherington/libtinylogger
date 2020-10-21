@@ -12,7 +12,6 @@
 #include <unistd.h>
 #include <errno.h>
 #include <signal.h>
-#include <systemd/sd-daemon.h>
 #include <sys/syscall.h>
 
 #include <tinylogger.h>
@@ -44,6 +43,7 @@ static void free_bufs(void) {
  * output by calling log_done().
  */
 static void inthandler(int sig) {
+	(void) sig;	// suppress "unused" warning
 	printf("\nSIGINT caught\n");
 	log_done();
 	printf("logs closed\n");
