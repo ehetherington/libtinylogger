@@ -9,9 +9,14 @@
  */
 
 /*
- * This file shouldn't be included by user programs or installed into
- * /usr/local/include
- * This file should only be included AFTER tinylogger.h (needs
+ * This file shouldn't be included by a user programs.
+ *
+ * None of these declarations should be used by user programs. They are
+ * necessary for library itself to share "private" functions, etc.
+ *
+ * They are prefixed with "log_" to reduce namespace impact.
+ *
+ * For development use, this file should only be included AFTER tinylogger.h (needs
  * TL_BEGIN_C_DECLS, among other things).
  */
 
@@ -27,9 +32,6 @@
 #include "tinylogger.h"
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
-// TODO: Check if is necessary. C++ programs shouldn't be calling the
-// included functions directly but the declarations may pollute the
-// symbol space.
 TL_BEGIN_C_DECLS
 
 #define LOG_CH_COUNT 2	/**< The number of channels supported. */
@@ -63,7 +65,8 @@ void log_do_head(LOG_CHANNEL *);
 void log_do_tail(LOG_CHANNEL *);
 
 char *log_hexformat (void const * const addr, size_t const len);
-char *log_get_timezone(char *tz, size_t tz_len);
+char *log_get_timezone(char * const buf, size_t const buf_len);
+
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
 TL_END_C_DECLS

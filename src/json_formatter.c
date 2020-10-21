@@ -66,13 +66,19 @@
 #define _GNU_SOURCE	/**< for syscall SYS_gettid */
 // from kernel/sched.h
 #define TASK_COMM_LEN 16
-#define NAME_LEN TASK_COMM_LEN  // includes null termination
+#define NAME_LEN TASK_COMM_LEN  /**< includes null termination */
+
+/* America/Argentina/ComodRivadavia is currently longest at 32 chars */
+#define TIMEZONE_LEN 40	/**< TODO: find an actual max */
 #endif /* DOXYGEN_SHOULD_SKIP_THIS */
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <string.h>
 #include <pthread.h>
 #include <sys/syscall.h>
+#include <linux/limits.h>
 
 #include "tinylogger.h"
 #include "private.h"
@@ -145,6 +151,7 @@ int log_do_json_head(FILE *stream) {
 /**
  * @fn int log_do_json_tail(FILE *stream)
  * @brief Write the json epilog
+ * @details Not really part of the API. Public so that tinylogger.c can use it.
  *
  * The closing
  * ```
@@ -189,6 +196,46 @@ static int do_json_end(FILE *stream) {
 	return fprintf(stream, "  }");
 }
 
+// not re-entrant, but only called from mutex protected code
+static inline char *get_timezone() {
+	static char tz[PATH_MAX] = {0};
+	static bool init_done = false;
+	char *result;
+
+	if (init_done) return tz;
+
+	result = log_get_timezone(tz + 1, sizeof(tz) - 2);
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstringop-truncation"
+#pragma GCC diagnostic ignored "-Wstringop-overflow"
+	if (result == (tz + 1)) {
+		tz[0] = '[';
+		strncat(tz, "]", sizeof(tz));
+	}
+#pragma GCC diagnostic pop
+
+// for generating a test file with json-timezones.c
+//#define TIMEZONE_TEST
+#ifndef TIMEZONE_TEST
+	init_done = true;
+#endif
+
+	return tz;
+}
+
+static inline void json_format_timestamp(struct timespec *ts,
+	char *buf, int buf_len) {
+	log_format_timestamp(ts, FMT_UTC_OFFSET | FMT_ISO | SP_NANO, buf, buf_len);
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstringop-truncation"
+#pragma GCC diagnostic ignored "-Wstringop-overflow"
+	strncat(buf, get_timezone(), buf_len);
+#pragma GCC diagnostic pop
+
+}
+
 /**
  * @fn int log_fmt_json(FILE *stream, int sequence, struct timespec *ts, int level,
  * const char *file, const char *function, int line, char *msg)
@@ -206,7 +253,7 @@ static int do_json_end(FILE *stream) {
  */
 int log_fmt_json(FILE *stream, int sequence, struct timespec *ts, int level,
     const char *file, const char *function, int line, char *msg) {
-    char date[TIMESTAMP_LEN];
+    char date[TIMESTAMP_LEN + TIMEZONE_LEN];
 	char buf[BUFSIZ] = {0};
 
 	pthread_t thread = pthread_self();
@@ -222,8 +269,16 @@ int log_fmt_json(FILE *stream, int sequence, struct timespec *ts, int level,
 	// TODO: escape file and function also
 	escape_json(msg, buf, sizeof(buf));
 
-    log_format_timestamp(ts, FMT_UTC_OFFSET | FMT_ISO | SP_NANO,
+	/*
+	 * Save some clock cycles if use of timezone is not configured.
+	 */
+#if ENABLE_TIMEZONE
+	json_format_timestamp(ts, date, sizeof(date));
+#else
+	log_format_timestamp(ts, FMT_UTC_OFFSET | FMT_ISO | SP_NANO,
 		date, sizeof(date));
+#endif
+
 	n_written += do_json_start(stream, sequence);
 	n_written += do_json_text(stream, "isoDateTime", date, true);
 	n_written += do_json_timespec(stream, ts);
