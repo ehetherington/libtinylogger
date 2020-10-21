@@ -1,6 +1,8 @@
 EXTRA_DIST = \
 	daemon-hints.md \
 	doxygen.md \
+	examples.md \
+	formats.md \
 	guide.md \
 	install-as-lib.md \
 	levels.md \
@@ -8,6 +10,6 @@ EXTRA_DIST = \
 	performance.md \
 	public-symbols.md \
 	quick-start.md \
-	json_formatter.md \
-	xml_formatter.md \
-	json-reader.md
+	json-formatter.md \
+	json-reader.md \
+	xml_formatter.md
