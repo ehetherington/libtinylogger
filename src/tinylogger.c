@@ -34,6 +34,10 @@
 #include "private.h"
 
 /**
+ * To configure with configure (autotools)
+ * $ MAX_MSG_SIZE=xxxx ./configure
+ * To configure with the quick-start setup edit the config.h in the quick-start
+ * directory.
  * 0 = unlimited - uses asprintf
  */
 #ifndef MAX_MSG_SIZE
