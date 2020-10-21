@@ -19,12 +19,12 @@
 ## Test description.
 
 A simple elapsed time test of each of the available formats was run. For each
-format, 1000 log messages were were written to /dev/null. The time/message value
+format, 1000 log messages were written to /dev/null. The time/message value
 was computed by dividing the total elapsed time by the number of messages.
 
-As other processes could affect this approach, each of these test was repeated
-50 times, for a total of 50,000 messages per format. The minimum, median, mean
-and maximum times were found.
+As other processes could affect this approach, each of the above batch
+measurements was repeated 50 times, for a total of 50,000 messages per format.
+The minimum, median, mean and maximum times of the above batches was found.
 
 ## Results
 
@@ -66,8 +66,8 @@ The median was less than or equal to the mean in all cases, but also very close,
 This means that very few large outliers were encountered in these runs.
 There were other runs where there were very large maximums, and apparently
 several of them, and the mean was noticably larger than the mean. Since the min,
-median and mean measurements in these runs were all very close, they seem
-reliable.
+median and mean measurements in these runs were all very close, the minimums
+seem to be a reliable indication of the message rate.
 
 ### XW6600
 In the following discussion, the results from the XW6600 are considered.
@@ -94,7 +94,7 @@ The RaspberryPi results were slower, as expected, mostly due to the 1.5 MHz
 processor. But there is an immediate jump of about 1 microsecond over the
 XW6600 results. This prompted measurement of the `clock_gettime()` and
 `localtime_r()` functions. Unexpectedly, the `clock_gettime()` function went
-from 57 microseconds on the XW660 to 593 microseconds on the RaspberryPi. And
+from 57 nanoseconds on the XW660 to 593 nanoseconds on the RaspberryPi. And
 `localtime_r()` function also suffered a disproportional increase.
 
 ### Preliminary investigation into time function overhead
