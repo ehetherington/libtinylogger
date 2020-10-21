@@ -132,33 +132,39 @@ mkdir $TMP_DIR
 #fi
 
 # run the tests
+# exit on first error
 for PROG in ${PROGS_LIST[@]}; do
 	PROG_BASENAME="$( basename "$PROG")"
 	OPTIONS="${options[$PROG_BASENAME]}"
-	echo "=========== $PROG"
-	echo "=========== $PROG_BASENAME $OPTIONS"
+	echo "==== testing ====> $PROG"
 
 	EXE="$PROG"
 
-	# check program return status
+	# check program return status (should be 0)
+	echo "---- command with options: $PROG_BASENAME $OPTIONS"
 	run_test $EXE $OPTIONS
 	status=$?
 	if [ $status != 0 ]; then
 		echo "$PROG failed with status $status"
 		exit $status
 	else
-		echo "exit status $PROG returned $status"
+		echo "--   status: $status"
 	fi
 
-	# check that there are no memory leaks
+	# check that there are no memory leaks (valgrind status should be 0)
 	if $DO_VALGRIND; then
+		echo "---- valgrind with options: valgrind --error-exitcode=1 $PROG_BASENAME $OPTIONS"
 		run_test valgrind --error-exitcode=1 $EXE $OPTIONS
 		status=$?
 		if [ $status != 0 ]; then
 			echo "$PROG failed with status $status"
 			exit $status
 		else
-			echo "valgrind    $PROG returned $status"
+			echo "--   status: $status"
 		fi
 	fi
 done
+
+echo "===================================" 
+echo "============  SUCCESS  ============" 
+echo "===================================" 
