@@ -1,0 +1,225 @@
+/*
+ * (C) 2020 Edward Hetherington
+ * This code is licensed under MIT license (see LICENSE in top dir for details)
+ */
+
+/*
+ * Notice: this file was generated from linked-list.c.in
+ * Any edits to this file will be lost.
+ * Configured with:
+ *     dll_storage_class = "@dll_storage_class@" (must end with ' ')
+ *     dll_prefix        = "@dll_prefix@"
+ *     dll_data_type     = "@dll_data_type@"
+ */
+
+/**
+ * Doubly linked list.
+ *
+ * Nodes on the list may be accessed from the head or the tail. Optionally,
+ * push() and pop() accessors may be configured.
+ */
+
+#include <stdlib.h> /**< for calloc(3) and free(3) */
+#include <stdbool.h>
+
+#include "linked-list.h" /**< LL_PUSH_POP_TYPE is defined there */
+
+/** The list dll_nodes */
+struct dll_node {
+	@dll_data_type@ data;   /**< the data in the node */
+	struct dll_node *next;  /**< towards tail */
+	struct dll_node *prev;  /**< towards head */
+};
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-function"
+
+/**
+ * @fn _new_node(@dll_data_type@ data)
+ * @brief Creates a new Node and returns pointer to it.
+ * @details the memory must be free()'d
+ * @param data the data to be stored in the node
+ * @return the address of that node.
+ */
+static struct dll_node * _new_node(@dll_data_type@ data) {
+	struct dll_node * newNode = (struct dll_node *) calloc(1, sizeof(struct dll_node));
+	newNode->data = data;
+	return newNode;
+}
+
+/**
+ * @fn void @dll_prefix@insert_head(DLL_LIST *,  @dll_data_type@)
+ * @brief Inserts a Node at the head of doubly linked list
+ * @param list the list to insert the node into
+ * @param data the data value to be inserted
+ */ // insert_head()
+@dll_storage_class@void @dll_prefix@insert_head(DLL_LIST * list, @dll_data_type@ data) {
+	struct dll_node * newNode = _new_node(data);
+
+	if (list->head == NULL) {
+		list->head = newNode;
+		list->tail = newNode;
+		return;
+	}
+
+	list->head->prev = newNode;
+	newNode->next = list->head;
+	list->head = newNode;
+}
+
+/**
+ * @fn void @dll_prefix@insert_tail(DLL_LIST *, @dll_data_type@)
+ * @brief Inserts a Node at the tail of doubly linked list
+ * @param list the list to insert the node into
+ * @param data the data value to be inserted
+ */ // insert_tail()
+@dll_storage_class@void @dll_prefix@insert_tail(DLL_LIST * list, @dll_data_type@ data) {
+	struct dll_node *newNode = _new_node(data);
+
+	if (list->head == NULL) {
+		list->head = newNode;
+		list->tail = newNode;
+		return;
+	}
+
+	list->tail->next = newNode;
+	newNode->prev = list->tail;
+	list->tail = newNode;
+}
+
+/**
+ * @fn @dll_data_type@ @dll_prefix@delete_head(DLL_LIST *list)
+ * @brief delete the node at the head of the list
+ * @param list the list from which to delete the node
+ * @return the data contained in the deleted node, NULL if the list is empty
+ */ // delete_head()
+@dll_storage_class@@dll_data_type@ @dll_prefix@delete_head(DLL_LIST *list) {
+
+	if (list->head == NULL) return NULL;
+
+	@dll_data_type@ data = list->head->data;
+	struct dll_node * next = list->head->next;
+	free(list->head);
+
+	list->head = next;
+	if (list->head == NULL) {
+		list->tail = NULL;
+	} else {
+		list->head->prev = NULL;
+	}
+
+	return data;
+}
+
+/**
+ * @fn @dll_dat_type@ @dll_prefix@@dll_data_type@delete_tail(DLL_LIST *list)
+ * @brief delete the node at the tail of the list
+ * @param list the list from which to delete the node
+ * @return the data contained in the deleted node, NULL if the list is empty
+ */ // delete_tail()
+@dll_storage_class@@dll_data_type@ @dll_prefix@delete_tail(DLL_LIST *list) {
+
+	if (list->tail == NULL) return NULL;
+
+	@dll_data_type@ data = list->tail->data;
+	struct dll_node * prev = list->tail->prev;
+	free(list->tail);
+
+	list->tail = prev;
+	if (list->tail == NULL) {
+		list->head = NULL;
+	} else {
+		list->tail->next = NULL;
+	}
+
+	return data;
+}
+
+/**
+ * @fn @dll_data_type@ @dll_prefix@head(DLL_LIST *list)
+ * @brief return the data contained in the Node at the head of the list
+ * @param list the list from which to delete the node
+ * @return the data contained in the head node, NULL if the list is empty
+ */ // head()
+@dll_storage_class@@dll_data_type@ @dll_prefix@head(DLL_LIST *list) {
+	if (list->head == NULL) return NULL;
+	return list->head->data;
+}
+
+/**
+ * @fn @dll_data_type@ @dll_prefix@tail(DLL_LIST *list)
+ * @brief return the data contained in the Node at the tail of the list
+ * @param list the list from which to delete the node
+ * @return the data contained in the tail node, NULL if the list is empty
+ */ // tail()
+@dll_storage_class@@dll_data_type@ @dll_prefix@tail(DLL_LIST *list) {
+	if (list->tail == NULL) return NULL;
+	return list->tail->data;
+}
+
+/**
+ * @fn bool @dll_prefix@is_empty(DLL_LIST *list)
+ * @brief check if a list is empty
+ * @param list the list from which to delete the node
+ * @return true if the list is empty
+ */ // is_empty()
+@dll_storage_class@bool @dll_prefix@is_empty(DLL_LIST *list) {
+	return list->head == NULL;
+}
+
+/**
+ * @fn void @dll_prefix@clear_list(DLL_LIST *list)
+ * @brief Remove all nodes in the list and free node memory
+ * @param list the list to clear
+ */ // clear()
+@dll_storage_class@void @dll_prefix@clear_list(DLL_LIST *list) {
+	struct dll_node *head = list->head;
+	struct dll_node *next;
+
+	while (head != NULL) {
+		next = head->next;
+		free(head);
+		head = next;
+	}
+
+	list->head = NULL;
+	list->tail = NULL;
+}
+
+#if LL_PUSH_POP_TYPE == LL_PUSH_POP_FIFO
+/**
+ * @fn void @dll_prefix@push(List *list, @dll_data_type@ data)
+ * @brief add a data item onto the tail of a list
+ * @param list the list to push the data onto
+ * @param data the data to be pushed onto that list
+ */ // push() - FIFO
+@dll_storage_class@void @dll_prefix@push(DLL_LIST *list, @dll_data_type@ data) {
+	@dll_prefix@insert_tail(list, data);
+}
+#endif
+
+#if LL_PUSH_POP_TYPE == LL_PUSH_POP_LIFO
+/**
+ * @fn void @dll_prefix@push(List *list, @dll_data_type@ data)
+ * @brief add a data item onto the head of a list
+ * @param list the list to push the data onto
+ * @param data the data to be pushed onto that list
+ */ // push() - LIFO
+@dll_storage_class@void @dll_prefix@push(DLL_LIST *list, @dll_data_type@ data) {
+	@dll_prefix@insert_head(list, data);
+}
+#endif
+
+#if LL_PUSH_POP_TYPE != LL_PUSH_POP_NONE
+/**
+ * @fn @dll_data_type@ @dll_prefix@pop(List *list)
+ * @brief remove a data item from the head of a list
+ * @param list the list to pop the data from
+ * @return the data to be at the head of the list, NULL if the list is empty
+ */ // pop()
+@dll_storage_class@@dll_data_type@ @dll_prefix@pop(DLL_LIST *list) {
+	return @dll_prefix@delete_head(list);
+}
+#endif
+
+#pragma GCC diagnostic pop

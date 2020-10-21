@@ -1,0 +1,74 @@
+#ifndef _LINKED_LIST_H_
+#define _LINKED_LIST_H_ 1
+
+/*
+ * (C) 2020 Edward Hetherington
+ * This code is licensed under MIT license (see LICENSE in top dir for details)
+ */
+
+/*
+ * Notice: this file was generated from linked-list.h.in
+ * Any edits to this file will be lost.
+ * Configured with:
+ *     dll_storage_class = "@dll_storage_class@" (must end with ' ')
+ *     dll_prefix        = "@dll_prefix@"
+ *     dll_data_type     = "@dll_data_type@"
+ */
+
+/**
+ * Doubly linked list.
+ *
+ * Nodes on the list may be accessed from the head or the tail. Optionally,
+ * push() and pop() accessors may be configured.
+ */
+
+#include <stdbool.h>
+
+/**
+ * NONE no push/pop functions
+ * LIFO push/pop => push() inserts at the head, pop() deletes from the head.
+ * FIFO push/pop => push() inserts at the tail, pop() deletes from the head.
+ */
+#define LL_PUSH_POP_NONE        0
+#define LL_PUSH_POP_FIFO        1
+#define LL_PUSH_POP_LIFO        2
+
+/**
+ * In order to get push/pop functions, you must #define LL_PUSH_POP_TYPE to one
+ * of the above. You may define it here, or before including this file. (This
+ * file is included by linked_list.c).
+ */
+//#define LL_PUSH_POP_TYPE LL_PUSH_POP_LIFO
+
+/** The list */
+typedef struct dll_list {
+	struct dll_node *head; /**< the head of the DLL */
+	struct dll_node *tail; /**< the tail of the DLL */
+} DLL_LIST;
+
+// insert_head()
+@dll_storage_class@void @dll_prefix@insert_head(DLL_LIST * list, @dll_data_type@ data);
+// insert_tail()
+@dll_storage_class@void @dll_prefix@insert_tail(DLL_LIST * list, @dll_data_type@ data);
+// delete_head()
+@dll_storage_class@@dll_data_type@ @dll_prefix@delete_head(DLL_LIST *list);
+// delete_tail()
+@dll_storage_class@@dll_data_type@ @dll_prefix@delete_tail(DLL_LIST *list);
+// head()
+@dll_storage_class@@dll_data_type@ @dll_prefix@head(DLL_LIST *list);
+// tail()
+@dll_storage_class@@dll_data_type@ @dll_prefix@tail(DLL_LIST *list);
+// is_empty()
+@dll_storage_class@bool @dll_prefix@is_empty(DLL_LIST *list);
+// clear_list()
+@dll_storage_class@void @dll_prefix@clear_list(DLL_LIST *list);
+
+#if defined LL_PUSH_POP_TYPE && LL_PUSH_POP_TYPE != LL_PUSH_POP_NONE
+// push()
+@dll_storage_class@void @dll_prefix@push(DLL_LIST *list, @dll_data_type@ data);
+// pop()
+@dll_storage_class@@dll_data_type@ @dll_prefix@pop(DLL_LIST *list);
+#endif
+
+#pragma GCC diagnostic pop
+#endif
