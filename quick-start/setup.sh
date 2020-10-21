@@ -25,7 +25,6 @@ DEMO_LIB_DIR="demo-lib"		# where to put demo utils
 DOC_DIR="doc"		# doxygen output
 GUIDE_DIR="guide"	# markdown for doxygen
 
-
 # making the docs creates html man and latex sub-directories in doc
 DOC_DIRS="$DOC_DIR $GUIDE_DIR"
 
@@ -62,12 +61,28 @@ cp "$TOP_SRCDIR"/src/tinylogger.h "$INC_DIR"
 # create a lib directory to deposit the library
 mkdir -p $LIB_DIR
 
+# substitute for Autoconf AC_SUBST()
+# configure linked-list.c and linked-list.h
+# - dll_prefix        = ""
+# - dll_storage_class = "static "
+# - dll_data_type     = "char *"
+# $1 input file
+# $2 output file
+configure () {
+    sed '
+        s/@dll_prefix@//
+        s/@dll_storage_class@/static /
+        s/@dll_data_type@/char \*/' $1 > $2
+}
+
 # populate the logger source dir
 mkdir -p "$LOGGER_DIR"/alternatives
 cp "$SCRIPT_DIR"/config.h "$LOGGER_DIR"
 cp "$TOP_SRCDIR"/src/private.h "$LOGGER_DIR"
 cp "$TOP_SRCDIR"/src/alternatives/sd-daemon.h "$LOGGER_DIR"/alternatives
 cp "$TOP_SRCDIR"/src/*.c "$LOGGER_DIR"
+configure "$TOP_SRCDIR"/src/linked-list.h.in "$LOGGER_DIR"/linked-list.h
+configure "$TOP_SRCDIR"/src/linked-list.c.in "$LOGGER_DIR"/linked-list.c
 cp "$SCRIPT_DIR"/Makefile.logger "$LOGGER_DIR"/Makefile
 
 # populate the example source dir

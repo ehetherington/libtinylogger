@@ -23,9 +23,13 @@ clean:
 	$(MAKE) -C demo-lib clean
 	$(MAKE) -C examples clean
 	rm -rf $(GENERATED_DIRS)
-	rm -f lib/libtinylogger.a	                                     
+	rm -f lib/libtinylogger.a
 
+check: examples
+	./regression.sh
+
+# requires doxygen to be installed
 docs:
 	doxygen
 
-.PHONY: all logger demo-lib examples clean docs
+.PHONY: all logger demo-lib examples clean docs check
