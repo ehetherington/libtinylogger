@@ -1,5 +1,5 @@
 AM_CPPFLAGS = -I$(top_srcdir)/src
-AM_CFLAGS = -Wall -Wpedantic -Werror
+AM_CFLAGS = -Wall -Wpedantic -Werror -Wextra
 AM_LDFLAGS = -static -lpthread
 
 COMMON_LIBS = ../src/libtinylogger.la libdemo.a
@@ -23,10 +23,15 @@ noinst_PROGRAMS = \
 	xml-levels \
 	logrotate \
 	clocks \
-	log_mem
+	log_mem \
+	check-timezone \
+	json-timezones \
+	perf-test
 
 JAVAROOT = .
+if HAVE_JAVAC
 dist_noinst_JAVA = ParseXMLDate.java
+endif
 
 hello_world_SOURCES = hello_world.c
 hello_world_LDADD = ../src/libtinylogger.la
@@ -63,4 +68,13 @@ xml_levels_LDADD = ../src/libtinylogger.la
 
 clocks_SOURCES = clocks.c
 clocks_LDADD = ../src/libtinylogger.la
+
+check_timezone_SOURCES = check-timezone.c
+check_timezone_LDADD = ../src/libtinylogger.la
+
+json_timezones_SOURCES = json-timezones.c
+json_timezones_LDADD = ../src/libtinylogger.la
+
+perf_test_SOURCES = perf-test.c
+perf_test_LDADD = $(COMMON_LIBS)
 
