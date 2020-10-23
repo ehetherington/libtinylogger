@@ -5,7 +5,7 @@ The format mostly mimics the java.util.logging.XMLFormatter output.
 The JSON output is an array of records. The record objects are:
 
  - `isoDateTime` The message timestamp - it includes UTC offset, and may
-                 optionally include timezone. See [enabling timezone]
+                 optionally include Olson timezone. See [enabling timezone]
 				 (#enabling-timezone).
  - `timespec`    The struct timespec timestamp (basis of isoDateTime)
    - `sec`
@@ -84,7 +84,7 @@ full list of escaped characters is:
 	- apostrophies
 	- backslashes
 
-## Enabling Timezone in the timestamp <a name="enabling-timezone"/>
+## Enabling Olson Timezone in the timestamp <a name="enabling-timezone"/>
 This feature appends the Olson timezone, as in "Europe/London" or
 "America/New_York", not timezone IDs like "EST" or "BST".
 
@@ -143,4 +143,41 @@ With:
 Without:
 ```
     "isoDateTime" : "2020-08-11T17:40:31.109019932-04:00",
+```
+
+An example of a complete log file with Olson timezones enabled:
+```
+{
+  "records" : [  {
+    "isoDateTime" : "2020-10-23T13:00:35.509017997-04:00[America/New_York]",
+    "timespec" : {
+      "sec" : 1603472435,
+      "nsec" : 509017997
+    },
+    "sequence" : 1,
+    "logger" : "tinylogger",
+    "level" : "INFO",
+    "file" : "json.c",
+    "function" : "main",
+    "line" : 35,
+    "threadId" : 13581,
+    "threadName" : "json",
+    "message" : "\b backspaces are escaped for JSON output"
+  },  {
+    "isoDateTime" : "2020-10-23T13:00:35.509343545-04:00[America/New_York]",
+    "timespec" : {
+      "sec" : 1603472435,
+      "nsec" : 509343545
+    },
+    "sequence" : 2,
+    "logger" : "tinylogger",
+    "level" : "INFO",
+    "file" : "json.c",
+    "function" : "main",
+    "line" : 36,
+    "threadId" : 13581,
+    "threadName" : "json",
+    "message" : "\r carriage returns are escaped for JSON output"
+  } ]
+}
 ```

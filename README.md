@@ -253,6 +253,13 @@ Output messages in java.util.logging.XMLFormatter format.
 There is a companion [reader](https://github.com/ehetherington/JSON-LogReader)
 for files produced in the JSON format.
 
+Olson timezones may be enabled at compile time. The timestamps would then be:
+```
+    "isoDateTime" : "2020-10-23T13:00:35.509343545-04:00[America/New_York]",
+```
+See [guide/json-formatter.md](guide/json-formatter.md) for more information
+and how to enable this feature.
+
 Output message in json format.
 
 ```
