@@ -1,0 +1,5 @@
+# config.h and Makefile are NOT to be ignored
+!config.h
+!Makefile
+
+# TODO: add built objects
