@@ -3,7 +3,7 @@
 
 AC_PREREQ([2.69])
 AC_INIT([tinylogger], [0.6.0], [ejh.1957.eh@gmail.com])
-#AC_CONFIG_HEADERS([config.h])
+#AC_CONFIG_MACRO_DIRS([m4])
 AC_CONFIG_HEADER([config.h])
 AC_CONFIG_SRCDIR([src])
 
@@ -43,12 +43,15 @@ fi
 # Checks for programs.
 AC_PROG_CC
 
-AC_CHECK_PROG([javac])
-AM_CONDITIONAL([HAVE_JAVAC], [test -n "$javac"])
+# there is only one java example
+AC_CHECK_PROG([have_javac],[javac],[yes],[no])
+AM_CONDITIONAL([HAVE_JAVAC], [test "x$have_javac" = xyes])
+AM_COND_IF([HAVE_JAVAC],,[AC_MSG_WARN([javac needed to build an example])])
 
-AC_CHECK_PROG([doxygen])
-AM_CONDITIONAL([HAVE_DOXYGEN], [test -n "$doxygen"])
-
+# docs is not really "connected" yet...
+AC_CHECK_PROG([have_doxygen],[doxygen_xxx],[yes],[no])
+AM_CONDITIONAL([HAVE_DOXYGEN], [test "x$have_doxygen" = xyes])
+AM_COND_IF([HAVE_DOXYGEN],,[AC_MSG_WARN([doxygen needed to build docs])])
 
 # Checks for libraries.
 

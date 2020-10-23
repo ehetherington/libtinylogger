@@ -10,6 +10,8 @@ EXTRA_DIST += \
 	quick-start/Doxyfile \
 	quick-start/config.h
 
+#ACLOCAL_AMFLAGS = -I m4
+
 SUBDIRS = src demo guide utils
 
 if HAVE_DOXYGEN
