@@ -49,7 +49,7 @@ AM_CONDITIONAL([HAVE_JAVAC], [test "x$have_javac" = xyes])
 AM_COND_IF([HAVE_JAVAC],,[AC_MSG_WARN([javac needed to build an example])])
 
 # docs is not really "connected" yet...
-AC_CHECK_PROG([have_doxygen],[doxygen_xxx],[yes],[no])
+AC_CHECK_PROG([have_doxygen],[doxygen],[yes],[no])
 AM_CONDITIONAL([HAVE_DOXYGEN], [test "x$have_doxygen" = xyes])
 AM_COND_IF([HAVE_DOXYGEN],,[AC_MSG_WARN([doxygen needed to build docs])])
 
