@@ -2,4 +2,12 @@
 !config.h
 !Makefile
 
-# TODO: add built objects
+# ignore copied and built files
+check-symbols.sh
+regression.sh
+/demo-lib
+/examples
+/guide
+/include
+/logger
+
