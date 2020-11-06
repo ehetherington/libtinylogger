@@ -34,7 +34,6 @@
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
 TL_BEGIN_C_DECLS
 
-#define LOG_CH_COUNT 2	/**< The number of channels supported. */
 #define TIMESTAMP_LEN 40	/**< buffer size for formatting date/time */
 
 #endif /* DOXYGEN_SHOULD_SKIP_THIS */
@@ -51,20 +50,24 @@ struct _logChannel {
 	char		*pathname;		/**< pathname of the file, if logging to file */
 	bool		line_buffered;	/**< line buffered if true */
 	FILE		*stream;		/**< the stream for output */
-	bool		wrap_records;	/**< enclose Json and XML in begin/end log info */
+	char		*json_notes;	/**< used for json format records with the header enabled */
 	int			sequence;		/**< sequence number for structured streams (Json and XML) */
 	void (*open_action)(void);	/**< open function for structured streams (Json and XML) */
 	void (*close_action)(void);	/**< close function for structured streams (Json and XML) */
 };
 
+/*
+ * defined in json_formatter.c and xml_formatter.c
+ * needed by tinylogger.c
+ */
 int log_do_xml_head(FILE *stream);
 int log_do_xml_tail(FILE *stream);
-int log_do_json_head(FILE *stream);
+int log_do_json_head(FILE *stream, char *notes);
 int log_do_json_tail(FILE *stream);
-void log_do_head(LOG_CHANNEL *);
-void log_do_tail(LOG_CHANNEL *);
 
+/* defined in hexformat.c, used in tinylogger.c */
 char *log_hexformat (void const * const addr, size_t const len);
+/* defined in timezone.c, used in tinylogger.c */
 char *log_get_timezone(char * const buf, size_t const buf_len);
 
 
