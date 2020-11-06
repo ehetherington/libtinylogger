@@ -44,6 +44,10 @@
 #define MAX_MSG_SIZE BUFSIZ
 #endif
 
+/***************************************************/
+/********************* private *********************/
+/***************************************************/
+
 /*
  * configured is false at startup, and set true when the user configures a
  * channel. It is never cleared. It is used to route messages that come by
@@ -57,44 +61,26 @@ static bool configured = false;
 static LOG_LEVEL pre_init_level = LL_INFO;
 
 /**
- * The lock to support multithreaded access to the log_config data. Must be
- * public for tinylogger.c and logrotate.c to access it.
+ * The lock to support multithreaded access to the log_config data.
  */
-pthread_mutex_t log_lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t log_lock = PTHREAD_MUTEX_INITIALIZER;
 
 /**
  * @struct log_config
  * Parameters common to all (both) channels.
  */
 static struct log_config {
-	bool wrap_records;	/**< Include head/tail in XML/Json formats */
+	char *json_notes;	/**< notes to be used in future json format logs */
 	clockid_t clock_id;	/**< The clock used for timestamps */
 	struct timespec ts;	/**< The start time used for delta timestamp formats */
 } log_config = {
-	.wrap_records = true,
+	.json_notes = NULL,
 	.clock_id = CLOCK_REALTIME,
 	.ts = {0}
 };
 
 /**
- * @fn void log_set_pre_init_level(LOG_LEVEL log_level)
- * @brief Before any channel is configured, log messages are passed to the
- *        stderr.
- *
- * The minimum pre-init log level may be set using
- * log_set_pre_int_level(LOG_LEVEL). This is useful at startup time to debug
- * command line parsing before the final logging configuration is known.
- *
- * @param log_level the minimum level to output.
- */
-void log_set_pre_init_level(LOG_LEVEL log_level) {
-	pre_init_level = log_level;
-}
-
-/**
- * This may not need to be volatile, but better err on the
- * safe side.
- * Potentially different threads access it.
+ * Threads accessing log_channels[]
  *
  * Any thread calling the configuration functions. They modify it.
  *
@@ -102,11 +88,69 @@ void log_set_pre_init_level(LOG_LEVEL log_level) {
  *
  * The logrotate thread. It reads the config.
  */
-volatile struct _logChannel log_channels[LOG_CH_COUNT] = {
-	{LL_OFF,	NULL,	NULL, false, NULL, false, 0, NULL, NULL},
-	{LL_OFF,	NULL,	NULL, false, NULL, false, 0, NULL, NULL},
+static struct _logChannel log_channels[] = {
+	{LL_OFF,	NULL,	NULL, false, NULL, NULL, 0, NULL, NULL},
+	{LL_OFF,	NULL,	NULL, false, NULL, NULL, 0, NULL, NULL},
 };
-//	{LL_OFF,	NULL,	NULL, false, NULL},
+#define LOG_CH_COUNT (sizeof(log_channels) / sizeof(log_channels[0]))
+
+/**
+ * Parameters used to support logrotate
+ */
+static struct rotate_config {
+	int			signal;
+	bool		thread_running;
+	pthread_t	log_thread;
+} rotate_config = {
+	.signal = SIGUSR1,
+	.thread_running = false,
+	.log_thread = 0
+};
+
+/**
+ * @fn LOG_CHANNEL *get_channel(void)
+ * @brief get an available channel
+ * @return a LOG_CHANNEL *, or NULL if none available
+ */
+static LOG_CHANNEL *get_channel(void) {
+	LOG_CHANNEL *channel = (LOG_CHANNEL *) log_channels;
+	for (size_t n = 0; n < LOG_CH_COUNT; n++, channel++) {
+		if ((channel->pathname == NULL) &&
+			(channel->stream == NULL)) {
+			return channel;
+		}
+	}
+	return NULL;
+}
+
+/**
+ * @fn bool is_channel(LOG_CHANNEL *channel)
+ * @brief verify that the given channel is valid
+ * @param channel the channel to verify
+ * @return true if the channel exists
+ */
+static inline bool is_channel(LOG_CHANNEL *channel) {
+	// verify that it is actually a channel
+	LOG_CHANNEL  *log_ch = (LOG_CHANNEL *) log_channels;
+	for (size_t n = 0; n < LOG_CH_COUNT; n++, log_ch++) {
+		if (channel == log_ch) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
+/**
+ * @fn bool is_open_channel(LOG_CHANNEL *channel)
+ * @brief verify that the given channel is valid and open (in use)
+ * @param channel the channel to verify
+ * @return true if the channel exists
+ */
+static inline bool is_open_channel(LOG_CHANNEL *channel) {
+	if (!is_channel(channel)) return false;
+	return channel->stream != NULL ? true : false;
+}
 
 /**
  * @fn LOG_LEVEL log_constrain_level(LOG_LEVEL level)
@@ -124,14 +168,203 @@ static LOG_LEVEL log_constrain_level(LOG_LEVEL level) {
 }
 
 /**
+ * from <sys/time.h>
+ * used timersub macro, changed timeval to timespec
+ * kept the order of operands the same, that is a - b = result
+#define timespec_diff_macro(a, b, result)             \
+  do {                                                \
+    (result)->tv_sec = (a)->tv_sec - (b)->tv_sec;     \
+    (result)->tv_nsec = (a)->tv_nsec - (b)->tv_nsec;  \
+    if ((result)->tv_nsec < 0) {                      \
+      --(result)->tv_sec;                             \
+      (result)->tv_nsec += 1000000000;                \
+    }                                                 \
+  } while (0)
+ */
+
+/**
+ * @fn timespec_diff(struct timespec *, struct timespec *, struct timespec *)
+ * @brief Compute the diff of two timespecs, that is a - b = result.
+ * @param a the minuend
+ * @param b the subtrahend
+ * @param result a - b
+ */
+static inline void timespec_diff(struct timespec *a, struct timespec *b,
+	struct timespec *result) {
+	result->tv_sec  = a->tv_sec  - b->tv_sec;
+	result->tv_nsec = a->tv_nsec - b->tv_nsec;
+	if (result->tv_nsec < 0) {
+		if (result->tv_sec >= 0) --result->tv_sec;
+		result->tv_nsec += 1000000000L;
+	}
+}
+
+/**
+ * @fn void log_report_error(char const * const format, ...)
+ * @brief log internal errors to stderr
+ */
+static void log_report_error(char const * const format, ...)
+	__attribute__ ((format (printf, 1, 2)));
+static void log_report_error(char const * const format, ...) {
+    va_list args;
+    va_start(args, format);
+    vfprintf(stderr, format, args);
+    va_end(args);
+}
+
+/**
+ * @fn void log_do_head(LOG_CHANNEL  *channel)
+ * @brief Write the head for XML and Json output.
+ * @param channel the channel to handle
+ */
+static void log_do_head(LOG_CHANNEL  *channel) {
+	if (channel->formatter == log_fmt_xml) {
+		log_do_xml_head(channel->stream);
+	} else if (channel->formatter == log_fmt_json) {
+		log_do_json_head(channel->stream, log_config.json_notes);
+	}
+}
+
+/**
+ * @fn void log_do_tail(LOG_CHANNEL  *channel)
+ * @brief Write the tail for XML and Json output.
+ * @param channel the channel to handle
+ */
+static void log_do_tail(LOG_CHANNEL  *channel) {
+	if (channel->formatter == log_fmt_xml) {
+		log_do_xml_tail(channel->stream);
+	} else if (channel->formatter == log_fmt_json) {
+		log_do_json_tail(channel->stream);
+	}
+}
+
+/**
+ * @fn bool _reopen_channel(LOG_CHANNEL *channel)
+ * @brief used by log_sighandler() and log_reopen_channel().
+ */
+static bool _reopen_channel(LOG_CHANNEL *channel) {
+	char buf[BUFSIZ];
+	char *err_msg;
+
+	// verify that it is actually an open channel
+    if (!is_open_channel(channel)) return false;
+	
+	// for Json and XML
+	log_do_tail(channel);
+
+	// flush the output
+	fflush(channel->stream);
+
+	// if the channel is file based, close an reopen the channel
+	if (channel->pathname != NULL) {
+		fclose(channel->stream);
+
+		// open the file in append mode
+		FILE *file = fopen(channel->pathname, "a");
+
+		// check for failure
+		if (file == NULL) {
+			err_msg = strerror_r(errno, buf, sizeof(buf));
+			log_report_error("can't reopen file %s:%s\n", channel->pathname, err_msg);
+			free(channel->pathname);
+			bzero(channel, sizeof(*channel));
+			return false;
+		}
+
+		// set line buffered output, if requested
+		if (channel->line_buffered && setvbuf(file, NULL, _IOLBF, BUFSIZ)) {
+			err_msg = strerror_r(errno, buf, sizeof(buf));
+			log_report_error("can't set line buffering on %s: %s",
+				channel->pathname, err_msg);
+			return false;
+		}
+	}
+
+	// reset the sequence number
+	channel->sequence = 0;
+
+	// for Json and XML
+	log_do_head(channel);
+
+	return true;
+}
+
+/**
+ * @fn static void log_sighandler(void *config)
+ * @brief The log rotate signal handler.
+ * On catching the signal, log file(s) are flushed, closed, and re-opened.
+ * Moving an output file to a new place, and sending the log rotate signal
+ * saves the current state of the log file, and opens a new file to continue
+ * logging to.
+ *
+ * The thread may be stopped by passing a value of 0 for the signal.
+ * @param signal The number of the signal to use.
+ * @return 0 on success
+ */
+static void *log_sighandler(void *config) {
+	pthread_t me = pthread_self();
+	siginfo_t	info;
+	sigset_t	sigs;
+	int			signum;
+	int			rc;
+	struct rotate_config *tc = config;
+	LOG_CHANNEL *ch = (LOG_CHANNEL *) log_channels;
+
+	// TODO: don't be so drastic on failure
+	rc = pthread_setname_np(me, "log_sighandler");
+	if (rc != 0) {
+		perror("setting logrotate thread name");
+		exit(EXIT_FAILURE);
+	}
+
+	sigemptyset(&sigs);
+	sigaddset(&sigs, tc->signal);
+
+	while (1) {
+		signum = sigwaitinfo(&sigs, &info);
+		if (signum != rotate_config.signal)
+			continue;
+
+		// Sent by this process itself, exit requested
+		if (info.si_pid == getpid())
+			break;
+
+		pthread_mutex_lock(&log_lock);
+		for (size_t n = 0; n < LOG_CH_COUNT; n++, ch++) {
+			_reopen_channel(ch);
+		}
+		pthread_mutex_unlock(&log_lock);
+	}
+
+	return NULL;
+}
+
+/**************************************************/
+/********************* public *********************/
+/**************************************************/
+
+/**
+ * @fn void log_set_pre_init_level(LOG_LEVEL log_level)
+ * @brief Before any channel is configured, log messages are passed to the
+ *        stderr.
+ *
+ * The minimum pre-init log level may be set using
+ * log_set_pre_int_level(LOG_LEVEL). This is useful at startup time to debug
+ * command line parsing before the final logging configuration is known.
+ *
+ * @param log_level the minimum level to output.
+ */
+void log_set_pre_init_level(LOG_LEVEL log_level) {
+	pre_init_level = log_level;
+}
+
+/**
  * @fn log_select_clock(clockid_t clock_id)
  * @brief Select the linux clock to use for timestamps.
  *
  * CLOCK_REALTIME, CLOCK_MONOTONIC, CLOCK_MONOTONIC_RAW, CLOCK_REALTIME_COARSE,
  * and CLOCK_BOOTTIME are available, depending on kernel vesion.
  *
- * The start timestamp used by the elapsed time formatter is recorded using the
- * selected clock. Both the timestamp and clock selection are common to both
  * channels in order to make them relative to the same "t0".
  *
  * @return true if the requested clock_id is supported, false otherwise.
@@ -158,69 +391,28 @@ bool log_select_clock(clockid_t clock_id) {
 }
 
 /**
- * @fn void log_wrap_records(bool yes_no)
- * @brief Emit opening and closing sequences for Json and XML logging.
- *
- * Both the Json and XML output can enclose the stream of message records
- * in a "log" definition. Output can be constructed as a single log entity
- * or object, or as a sequence of individual record entities or objects.
- * This setting affects all channels in use,
- * @param yes_no set to true to include the opening and closing sequences
- * to construct a single log object.
- */
-void log_wrap_records(bool yes_no) {
-	log_config.wrap_records = yes_no;
-}
-
-/**
- * from <sys/time.h>
- * used timersub macro, changed timeval to timespec
- * kept the order of operands the same, that is a - b = result
- */
-#define timespec_diff_macro(a, b, result)             \
-  do {                                                \
-    (result)->tv_sec = (a)->tv_sec - (b)->tv_sec;     \
-    (result)->tv_nsec = (a)->tv_nsec - (b)->tv_nsec;  \
-    if ((result)->tv_nsec < 0) {                      \
-      --(result)->tv_sec;                             \
-      (result)->tv_nsec += 1000000000;                \
-    }                                                 \
-  } while (0)
-
-/**
- * @fn timespec_diff(struct timespec *, struct timespec *, struct timespec *)
- * @brief Compute the diff of two timespecs, that is a - b = result.
- * @param a the minuend
- * @param b the subtrahend
- * @param result a - b
- */
-static inline void timespec_diff(struct timespec *a, struct timespec *b,
-	struct timespec *result) {
-	result->tv_sec  = a->tv_sec  - b->tv_sec;
-	result->tv_nsec = a->tv_nsec - b->tv_nsec;
-	if (result->tv_nsec < 0) {
-		if (result->tv_sec >= 0) --result->tv_sec;
-		result->tv_nsec += 1000000000L;
-	}
-}
-
-/**
- * @fn void log_format_delta(struct timespec *ts, SEC_PRECISION precision,
+ * @fn void log_format_delta(struct timespec *ts, LOG_TS_FORMAT precision,
  *  char *buf, int len)
- * @brief Format the (struct timespec) ts in tb to an ascii string.
+ * @brief Format an elapsed time timestamp.
  *
- * The fractional seconds appended is specified by the SEC_PRECISION precision.
+ * The starting timestamp is common to all open channels. It is set when the
+ * first channel is opened, or when when a clock is selected with
+ * `log_select_clock()`.
+ *
+ * The fractional seconds appended is specified by the LOG_TS_FORMAT precision.
  * - SP_NONE  no fraction is appended
  * - SP_MILLI .nnn is appended
  * - SP_MICRO .nnnnnn is appended
  * - SP_NANO  .nnnnnnnnn is appended
+ *
+ * Other bits in LOG_TS_FORMAT are ignored.
  *
  * @param ts the previously obtained struct timespec timestamp.
  * @param precision the precision of the fraction of second to display
  * @param buf the buffer to format the timestamp to
  * @param len the length of that buffer. Must be >= 30
  */
-void log_format_delta(struct timespec *ts, SEC_PRECISION precision, char *buf, int len) {
+void log_format_delta(struct timespec *ts, LOG_TS_FORMAT precision, char *buf, int len) {
 	struct timespec delta;
 	char seconds_buf[26];
 
@@ -266,15 +458,15 @@ void log_format_delta(struct timespec *ts, SEC_PRECISION precision, char *buf, i
  * @param level the log level desired
  * @param file the filename of the line of code (debug format)
  * @param function the function of the line of code (debug format)
- * @param line_number the line number of the line of code (debug format)
+ * @param line the line number of the line of code (debug format)
  * @param format the printf format string (required)
  * @param ... the arguments to the format string
  *
  * @return 0 on success, -1 if the format was NULL, -2 if clock_gettime() error
  */
-int log_msg(int level,
-	const char *file, const char *function, const int line_number,
-	const char *format, ...) {
+int log_msg(int const level,
+	char const * const file, char const * const function, int const line,
+	char const * const format, ...) {
 	va_list	args;
 	struct timespec ts;
 	int status = 0;	// assume success
@@ -312,9 +504,9 @@ int log_msg(int level,
 	// send the output to the stderr
 	if (!configured) {
 		if (level > pre_init_level) goto unlock; 	// discard
-		// use sequence number of 0 - discarded by log_fmt_standard
+		// use a dummy sequence number of 0 - discarded by log_fmt_standard
 		log_fmt_standard(stderr, 0,
-				&ts, level, file, function, line_number, msg);
+				&ts, level, file, function, line, msg);
 		goto unlock;
 	}
 
@@ -322,11 +514,11 @@ int log_msg(int level,
 	// send the message to any active channels with the proper log level
 	//
 	LOG_CHANNEL *channel = (LOG_CHANNEL *) log_channels;
-	for (int n = 0; n < LOG_CH_COUNT; n++, channel++) {
+	for (size_t n = 0; n < LOG_CH_COUNT; n++, channel++) {
 		if ((channel->stream != NULL) && (level <= channel->level)) {
 			// pre-increment sequence - it is cleared to 0 on open
 			channel->formatter(channel->stream, ++channel->sequence,
-				&ts, level, file, function, line_number, msg);
+				&ts, level, file, function, line, msg);
 		}
 	}
 
@@ -357,14 +549,14 @@ unlock:
  * @param len length of the memory region
  * @param file the name of the file of the calling statement
  * @param function the name of the function of the calling statement
- * @param line_number the line number of the calling statement
+ * @param line the line number of the calling statement
  * @param format the printf format specifier
  *
  * @return 0 on success, -1 otherwise
  */
 int log_mem(int const level, void const * const buf, int const len,
-	char const *file, char const *function, int const line_number,
-	char const *format, ...) {
+	char const * const file, char const * const function, int const line,
+	char const * const format, ...) {
 	va_list	args;
 #if MAX_MSG_SIZE == 0
 	char *msg;
@@ -387,7 +579,7 @@ int log_mem(int const level, void const * const buf, int const len,
 
 	// separate the message from the dump with a newline
 	int status =
-		log_msg(level, file, function, line_number, "%s\n%s", msg, hex);
+		log_msg(level, file, function, line, "%s\n%s", msg, hex);
 
 #if MAX_MSG_SIZE == 0
 	free(msg);
@@ -396,34 +588,6 @@ int log_mem(int const level, void const * const buf, int const len,
 	free(hex);
 
 	return status;
-}
-
-/**
- * @fn void log_do_head(LOG_CHANNEL  *channel)
- * @brief Write the head for XML and Json output.
- * @param channel the channel to handle
- */
-void log_do_head(LOG_CHANNEL  *channel) {
-	if (!log_config.wrap_records) return;
-	if (channel->formatter == log_fmt_xml) {
-		log_do_xml_head(channel->stream);
-	} else if (channel->formatter == log_fmt_json) {
-		log_do_json_head(channel->stream);
-	}
-}
-
-/**
- * @fn void log_do_tail(LOG_CHANNEL  *channel)
- * @brief Write the tail for XML and Json output.
- * @param channel the channel to handle
- */
-void log_do_tail(LOG_CHANNEL  *channel) {
-	if (!log_config.wrap_records) return;
-	if (channel->formatter == log_fmt_xml) {
-		log_do_xml_tail(channel->stream);
-	} else if (channel->formatter == log_fmt_json) {
-		log_do_json_tail(channel->stream);
-	}
 }
 
 /**
@@ -444,7 +608,7 @@ void log_done(void) {
 	// disable all log_channels
 	// if a channel was file based, flush and close it
 	LOG_CHANNEL  *log_ch = (LOG_CHANNEL *) log_channels;
-	for (int n = 0; n < LOG_CH_COUNT; n++, log_ch++) {
+	for (size_t n = 0; n < LOG_CH_COUNT; n++, log_ch++) {
 		log_close_channel(log_ch);
 	}
 }
@@ -464,10 +628,10 @@ void log_done(void) {
  */
 LOG_CHANNEL *log_open_channel_s(FILE *stream, LOG_LEVEL level,
 	log_formatter_t formatter) {
-	LOG_CHANNEL *results = NULL;	// assume failure
+	LOG_CHANNEL *channel = NULL;	// assume failure
 	
 	// check that we have a stream
-	if (stream == NULL) return results;
+	if (stream == NULL) return NULL;
 
 	// give a default formatter in case none was specified
 	if (formatter == NULL) formatter = log_fmt_standard;
@@ -475,30 +639,20 @@ LOG_CHANNEL *log_open_channel_s(FILE *stream, LOG_LEVEL level,
 	// make sure the level is a valid one
 	level = log_constrain_level(level);
 
-	// log_config is a global resource, LOCK it
+	// LOCK global resources
 	pthread_mutex_lock(&log_lock);
 
 	// find an available channel
-	LOG_CHANNEL *channel = (LOG_CHANNEL *) log_channels;
-	int n;
-	for (n = 0; n < LOG_CH_COUNT; n++, channel++) {
-		if ((channel->pathname == NULL) &&
-			(channel->stream == NULL)) {
-			break;
-		}
-	}
-	if (n == LOG_CH_COUNT) {
-		goto unlock;
-	}
+	channel = get_channel();
+	if (channel == NULL) goto unlock;
 
-	// clear unused params
+	// clear all params
 	bzero(channel, sizeof(*channel));
 
 	// record the stream, level and formatter
 	channel->stream = stream;
 	channel->level = level;
 	channel->formatter = formatter;
-	channel->wrap_records = log_config.wrap_records;	// latch state
 
 	// for Json and XML
 	log_do_head(channel);
@@ -511,14 +665,11 @@ LOG_CHANNEL *log_open_channel_s(FILE *stream, LOG_LEVEL level,
 		configured = true;
 	}
 
-	// success
-	results = channel;
-
 unlock:
-	// log_config is a global resource, UNLOCK it
+	// UNLOCK global resources
 	pthread_mutex_unlock(&log_lock);
 
-	return results;
+	return channel;
 }
 
 /**
@@ -539,10 +690,10 @@ unlock:
  */
 LOG_CHANNEL *log_open_channel_f(char *pathname, LOG_LEVEL level,
 	log_formatter_t formatter, bool line_buffered) {
-	LOG_CHANNEL *results = NULL;	// assume failure
+	LOG_CHANNEL *channel = NULL;
 	
 	// check that we have a pathname
-	if (pathname == NULL) return results;
+	if (pathname == NULL) return NULL;
 
 	// give a default formatter in case none was specified
 	if (formatter == NULL) formatter = log_fmt_standard;
@@ -550,21 +701,12 @@ LOG_CHANNEL *log_open_channel_f(char *pathname, LOG_LEVEL level,
 	// make sure the level is a valid one
 	level = log_constrain_level(level);
 
-	// log_config is a global resource, LOCK it
+	// LOCK global resources
 	pthread_mutex_lock(&log_lock);
 
 	// find an available channel
-	LOG_CHANNEL *channel = (LOG_CHANNEL *) log_channels;
-	int n;
-	for (n = 0; n < LOG_CH_COUNT; n++, channel++) {
-		if ((channel->pathname == NULL) &&
-			(channel->stream == NULL)) {
-			break;
-		}
-	}
-	if (n == LOG_CH_COUNT) {
-		goto unlock;
-	}
+	channel = get_channel();
+	if (channel == NULL) goto unlock;
 
 	// clear unused params
 	bzero(channel, sizeof(*channel));
@@ -590,7 +732,6 @@ LOG_CHANNEL *log_open_channel_f(char *pathname, LOG_LEVEL level,
 	channel->stream = file;
 	channel->level = level;
 	channel->formatter = formatter;
-	channel->wrap_records = log_config.wrap_records;	// latch state
 
 	// for Json and XML
 	log_do_head(channel);
@@ -603,14 +744,39 @@ LOG_CHANNEL *log_open_channel_f(char *pathname, LOG_LEVEL level,
 		configured = true;
 	}
 
-	// success
-	results = channel;
-
 unlock:
-	// log_config is a global resource, UNLOCK it
+	// UNLOCK global resources
 	pthread_mutex_unlock(&log_lock);
 
-	return results;
+	return channel;
+}
+
+/**
+ * @fn void log_set_json_notes(char *notes)
+ * @brief Set the notes to use in future logs opened using the json formatter.
+ *
+ * @note ENABLE_JSON_HEADER must be set for the notes field to be present. See
+ * guide/json_formatter.md
+ *
+ * @param notes the notes to use
+ * 
+ */
+void log_set_json_notes(char *notes) {
+	static char _notes[BUFSIZ] = {0};
+
+	// LOCK global resources
+	pthread_mutex_lock(&log_lock);
+
+	if (notes == NULL) {
+		log_config.json_notes = NULL;
+	} else {
+		// stash a "private" copy
+		strncpy(_notes, notes, sizeof(_notes) - 1);
+		log_config.json_notes = _notes;
+	}
+
+	// UNLOCK global resources
+	pthread_mutex_unlock(&log_lock);
 }
 
 /**
@@ -619,6 +785,9 @@ unlock:
  * @brief Change the log level and/or formatter of a channel while it is open.
  *
  * The parameters will be changed in sync.
+ *
+ * @deprecated Changing formats on an open channel will not be supported in
+ * the future. See #log_set_level(LOG_CHANNEL *ch, LOG_LEVEL level)
  *
  * @param channel The channel to modify parameters.
  * @param level The new log level.
@@ -629,23 +798,16 @@ unlock:
 int log_change_params(LOG_CHANNEL  *channel, LOG_LEVEL level, log_formatter_t formatter) {
 	int status = -1;	// assume failure
 
-	// log_config is a global resource, LOCK it
+	// LOCK global resources
 	pthread_mutex_lock(&log_lock);
 
 	// make sure we have a formatter
 	if (formatter == NULL) goto unlock;
 
 	// verify that it is actually a channel
-	LOG_CHANNEL  *log_ch = (LOG_CHANNEL *) log_channels;
-	int n;
-	for (n = 0; n < LOG_CH_COUNT; n++, log_ch++) {
-		if (channel == log_ch) {
-			break;
-		}
-	}
-	if (n == LOG_CH_COUNT) {
-		goto unlock;
-	}
+    if (!is_channel(channel)) {
+        goto unlock;
+    }
 
 	// change the params
 	channel->level = log_constrain_level(level);
@@ -655,7 +817,38 @@ int log_change_params(LOG_CHANNEL  *channel, LOG_LEVEL level, log_formatter_t fo
 	status = 0;
 
 unlock:
-	// log_config is a global resource, UNLOCK it
+	// UNLOCK global resources
+	pthread_mutex_unlock(&log_lock);
+
+	return status;
+}
+
+/**
+ * @fn int log_set_level(LOG_CHANNEL  *channel, LOG_LEVEL level)
+ * @brief Change the log level of a channel while it is open.
+ *
+ * @param channel The channel to modify parameters.
+ * @param level The new log level.
+ * @return 0 on success, -1 if the channel is not valid
+ */
+int log_set_level(LOG_CHANNEL  *channel, LOG_LEVEL level) {
+	int status = -1;	// assume failure
+
+	// UNLOCK global resources
+	pthread_mutex_lock(&log_lock);
+
+	if (!is_channel(channel)) {
+		goto unlock;
+	}
+
+	// change the level
+	channel->level = log_constrain_level(level);
+
+	// success
+	status = 0;
+
+unlock:
+	// UNLOCK global resources
 	pthread_mutex_unlock(&log_lock);
 
 	return status;
@@ -671,6 +864,9 @@ unlock:
  *
  * If the channel is a stream based channel, it is just flushed.
  *
+ * In both cases, if the formatter is log_format_json or log_format_xml, the
+ * proper closing and opening sequences are produced.
+ *
  * The procedure would be:
  *
  * - rename the current file to, say, currentfile.save
@@ -682,7 +878,7 @@ unlock:
  *   - logging is unlocked
  * - logging then resumes without any messages being lost
  *
- * ```
+ *```
  *    LOG_CHANNEL *ch1 = log_open_channel_f(LIVE_LOG_NAME, ...);
  *    log_info(...);
  *    log_info("this is the last message in the "archived file");
@@ -690,71 +886,19 @@ unlock:
  *    // re-init the channel to the original pathname
  *    log_reopen_channel(ch1);
  *    log_info("this is the first message in the new live log file");
- *
- * ```
+ *```
  *
  * @param channel The channel to re-open.
- * @return 0 on success
+ * @return true on success
  */
 int log_reopen_channel(LOG_CHANNEL *channel) {
-	char buf[128];
-	char *err_msg;
-	int status = -1;
 
-	// log_config is a global resource, LOCK it
+	// LOCK global resources
 	pthread_mutex_lock(&log_lock);
 
-	// verify that it is actually a channel
-	LOG_CHANNEL *log_ch = (LOG_CHANNEL *) log_channels;
-	int n;
-	for (n = 0; n < LOG_CH_COUNT; n++, log_ch++) {
-		if (channel == log_ch) {
-			break;
-		}
-	}
-	if (n == LOG_CH_COUNT) {
-		goto unlock;
-	}
-	
-	// make sure we have a file based channel
-	if (channel->pathname == NULL) {
-		status = 0;	// no harm done
-		goto unlock;
-	}
+	int status = _reopen_channel(channel);
 
-	// for Json and XML
-	log_do_tail(channel);
-
-	// flush and close the current file
-	fflush(channel->stream);
-	fclose(channel->stream);
-
-	// open the file in append mode
-	FILE *file = fopen(channel->pathname, "a");
-
-	if (file == NULL) {
-		free(channel->pathname);
-		bzero(channel, sizeof(*channel));
-		goto unlock;
-	}
-
-	channel->sequence = 0;
-
-	// for Json and XML
-	log_do_head(channel);
-
-	// set line buffered output, if requested
-	if (channel->line_buffered && setvbuf(file, NULL, _IOLBF, BUFSIZ)) {
-		err_msg = strerror_r(errno, buf, sizeof(buf));
-		log_err("can't set line buffering on %s: %s", channel->pathname, err_msg);
-		goto unlock;
-	}
-
-	// success
-	status = 0;
-
-unlock:
-	// log_config is a global resource, UNLOCK it
+	// UNLOCK global resources
 	pthread_mutex_unlock(&log_lock);
 
 	return status;
@@ -771,21 +915,14 @@ unlock:
 int log_close_channel(LOG_CHANNEL *channel) {
 	int status = 0;	// assume success
 
-	// log_config is a global resource, lock it
+	// LOCK global resources
 	pthread_mutex_lock(&log_lock);
 
 	// verify that it is actually a channel
-	LOG_CHANNEL *log_ch = (LOG_CHANNEL *) log_channels;
-	int n;
-	for (n = 0; n < LOG_CH_COUNT; n++, log_ch++) {
-		if (channel == log_ch) {
-			break;
-		}
-	}
-	if (n == LOG_CH_COUNT) {
+    if (!is_channel(channel)) {
 		status = -1;
-		goto unlock;
-	}
+        goto unlock;
+    }
 
 	// see if it was actually open
 	if (channel->stream == NULL) {
@@ -808,8 +945,60 @@ int log_close_channel(LOG_CHANNEL *channel) {
 	bzero(channel, sizeof(*channel));
 
 unlock:
-	// log_config is a global resource, unlock it
+	// UNLOCK global resources
 	pthread_mutex_unlock(&log_lock);
 
 	return status;
+}
+
+/**
+ * @fn void log_enable_logrotate(int signal)
+ * @brief Start a thread to catch a signal for log rotation.
+ * On catching the signal, log file(s) are flushed, closed, and re-opened.
+ * Moving an output file to a new place, and sending the log rotate signal
+ * saves the current state of the log file, and opens a new file to continue
+ * logging to.
+ *
+ * The thread may be stopped by passing a value of 0 for the signal.
+ * @param signal The number of the signal to use.
+ * @return 0 on success
+ */
+int log_enable_logrotate(int signal) {
+	sigset_t		sigs;
+	pthread_attr_t	attrs;
+	int				retval;
+
+	if ((signal < 0) || (signal > SIGRTMAX)) {
+		return -1;
+	}
+
+	// TODO: check correct way to see if a thread actually exists and is
+	// still running. Set thread to 0 after successfull wait?
+	if (signal == 0) {
+		if (rotate_config.thread_running) {
+			pthread_kill(rotate_config.log_thread, rotate_config.signal);
+			pthread_join(rotate_config.log_thread, NULL);
+
+			rotate_config.thread_running = false;
+		}
+		return 0;
+	}
+
+	// create a set with only the signal of interest
+	sigemptyset(&sigs);
+	sigaddset(&sigs, signal);
+	pthread_sigmask(SIG_BLOCK, &sigs, NULL);
+
+	// Create a thread to handle the rotate signal
+	pthread_attr_init(&attrs);
+	pthread_attr_setstacksize(&attrs, 65536);
+	retval = pthread_create((pthread_t *) &rotate_config.log_thread,
+		&attrs, log_sighandler, (void *) &rotate_config);
+	pthread_attr_destroy(&attrs);
+	if (retval) return retval;
+
+	rotate_config.thread_running = true;
+	rotate_config.signal = signal;
+
+	return 0;
 }
