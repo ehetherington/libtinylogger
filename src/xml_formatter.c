@@ -100,16 +100,16 @@ static char *get_level(int level) {
 						"%d", log_labels[n].java_level);
 			}
 		}
-		/*
-		for (int n = 0; n < LL_N_VALUES; n++) {
-			fprintf(stderr, "%7s %s\n",
-				log_labels[n].english, java_level[n]);
-		}
-		*/
 	}
 	return java_level[level];
 }
 
+/**
+ * @fn char *entity(int character) 
+ * @brief replace special characters with their corresponding XML entities
+ * @param character the character to potentially replace
+ * @return a pointer to the entity string, or NULL if not an XML entity
+ */
 static char *entity(int character) {
 	switch (character) {
 		case '&': return XML_AMP;
@@ -141,9 +141,6 @@ static char *escape_xml(char const *input, char *buf, int len) {
 		*ptr_in != '\0' && (ptr_out < buf + len);
 		ptr_in++) {
 		if ((substitute = entity(*ptr_in)) != NULL) {
-			/*
-			printf("replacing %c with %s\n", *ptr_in, substitute);
-			*/
 			n_written =
 				snprintf(ptr_out, len - (ptr_out - buf), "%s", substitute);
 			ptr_out += n_written;
@@ -152,7 +149,7 @@ static char *escape_xml(char const *input, char *buf, int len) {
 		}
 	}
 
-	*ptr_out = '\0';
+	*ptr_out = '\0';	/* null terminate */
 
 	return buf;
 }
@@ -207,10 +204,10 @@ int log_do_xml_tail(FILE *stream) {
 }
 
 /**
- * @fn int log_fmt_xml(FILE *stream, int sequence, struct timespec *ts, int level,
- * const char *file, const char *function, int line, char *msg)
+ * @fn int log_fmt_xml(FILE *stream, int sequence, struct timespec *ts,
+ *      int level, const char *file, const char *function, int line, char *msg)
  *
- * @brief Output messages in XML format.
+ * @brief Output messages in XML format with `log` as their root element.
  *
  * @param stream the output stream to write to
  * @param sequence the sequence number of the message
@@ -222,14 +219,14 @@ int log_do_xml_tail(FILE *stream) {
  * @param msg the actual use message to print
  * @return the number of characters written.
  */
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-parameter"
 int log_fmt_xml(FILE *stream, int sequence, struct timespec *ts, int level,
     const char *file, const char *function, int line, char *msg) {
     char date[TIMESTAMP_LEN];
 	char buf[BUFSIZ] = {0};
 	long int time_millis;
 	long int time_nanos;
+
+	(void) line;	/* suppress "unused variable" warning */
 
 	time_millis = ts->tv_sec * 1000 + ts->tv_nsec / 1000000;
 	time_nanos = ts->tv_nsec % 1000000;
@@ -256,4 +253,24 @@ int log_fmt_xml(FILE *stream, int sequence, struct timespec *ts, int level,
 
 	return n_written;
 }
-#pragma GCC diagnostic push
+
+/**
+ * @fn int log_fmt_xml_records(FILE *stream, int sequence, struct timespec *ts,
+ *       int level, const char *file, const char *function, int line, char *msg)
+ *
+ * @brief Output messages in XML format with `record` as their root element.
+ *
+ * @param stream the output stream to write to
+ * @param sequence the sequence number of the message
+ * @param ts the struct timespec timestamp
+ * @param level the log level to print
+ * @param file the name of the file to print
+ * @param function the name of the function to print
+ * @param line the line number to print (unused)
+ * @param msg the actual use message to print
+ * @return the number of characters written.
+ */
+int log_fmt_xml_records(FILE *stream, int sequence, struct timespec *ts, int level,
+    const char *file, const char *function, int line, char *msg) {
+	return log_fmt_xml(stream, sequence, ts, level, file, function, line, msg);
+}
