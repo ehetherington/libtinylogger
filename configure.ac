@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.69])
-AC_INIT([tinylogger], [0.6.0], [ejh.1957.eh@gmail.com])
+AC_INIT([tinylogger], [0.6.2], [ejh.1957.eh@gmail.com])
 #AC_CONFIG_MACRO_DIRS([m4])
 AC_CONFIG_HEADER([config.h])
 AC_CONFIG_SRCDIR([src])
@@ -25,6 +25,17 @@ AC_ARG_ENABLE([timezone],
 AS_IF([test "x$enable_timezone" = xyes],
     AC_DEFINE([ENABLE_TIMEZONE], [1],
 		[Define to 1 to enable timezone in JSON timestamps])
+    )
+
+# Configure option: --enable-json-header[=no].
+# appears in config.h
+AC_ARG_ENABLE([json-header],
+    [AS_HELP_STRING([--enable-json-header],
+    [include a header in json logs (default is no)])],
+    [enable_json_header=yes], [enable_json_header=no])
+AS_IF([test "x$enable_json_header" = xyes],
+    AC_DEFINE([ENABLE_JSON_HEADER], [1],
+		[Define to 1 to enable header in JSON logs])
     )
 
 # used in src/Makefile.am
@@ -72,10 +83,19 @@ AC_CHECK_HEADERS([systemd/sd-daemon.h])
 #AC_SUBST([dll_prefix], ["log_"])
 #AC_SUBST([dll_storage_class], ["static "])
 
+# configure the "Doubly Linked List" sources
+# examples:
+# dll_prefix: "log_" or "dll_" or "" or ...
+# dll_storage_class: "static" or ""
+# dll_data_type: "char *" or "void *" or ...
 AC_SUBST([dll_prefix], [""])
-# remember trailing ' ' for dll_storage_class
-AC_SUBST([dll_storage_class], ["static "])
+AC_SUBST([dll_storage_class], ["static"])
 AC_SUBST([dll_data_type], ["char *"])
+
+# make sure dll_storage_class has a trailing space
+if test -n $dll_storage_class ; then
+	dll_storage_class="${dll_storage_class%% *} "
+fi
 
 AC_CONFIG_FILES(Makefile src/Makefile \
 	demo/Makefile guide/Makefile doc/Makefile utils/Makefile \
