@@ -21,7 +21,7 @@
 
 #define N_THREADS		250		/**< number of threads to run */
 #define N_LOOPS			1000	/**< number of loops for each thread to run */
-#define SLEEP_MICROS	500		/**< maximum sleep duration for each loop */
+#define SLEEP_MICROS	50		/**< maximum sleep duration for each loop */
 #define FORMAT			log_fmt_tall	/**< message format to use */
 
 /**
@@ -29,6 +29,7 @@
  */
 struct thread_info {
 	char	name[NAME_LEN];			/**< the thread name */
+	useconds_t	sleep_time;			/**< the maximum time to sleep (uS) */
 	pthread_t	thread_id;			/**< the posix thread_id */
 	int			tid;				/**< the linux thread id */
 	int			count;				/**< the number of loops to do */
@@ -40,10 +41,12 @@ static struct thread_info threads[N_THREADS];
 /**
  * @fn int get_index(int)
  * @brief search the thread list for a matching tid
+ * @param tid the id of the thread to search for
+ * @param n_threads the number of threads started
  * @return the index of the matching entry, -1 if no match
  */
-static int get_index(int tid) {
-	for (int n = 0; n < N_THREADS; n++) {
+static int get_index(int tid, int n_threads) {
+	for (int n = 0; n < n_threads; n++) {
 		if (threads[n].tid == tid) {
 			return n;
 		}
@@ -84,7 +87,7 @@ static void *threadFunc(void *parm) {
 
 	thread_info->tid = tid;
 
-	rc = pthread_setname_np(thread, parm);
+	rc = pthread_setname_np(thread, thread_info->name);
 	if (rc != 0)
 		errExitEN(rc, "pthread getname");
 
@@ -98,10 +101,10 @@ static void *threadFunc(void *parm) {
 	log_info("hello from %s (%d)", thread_name, tid);
 
 	for (int n = 0; n < thread_info->count; n++) {
-		int x = rand_r(&seed);
+		useconds_t x = rand_r(&seed);
 		double X = (double) x / (double) RAND_MAX;
 
-		x = (int) ((double) SLEEP_MICROS) * X;
+		x = (useconds_t) ((double) thread_info->sleep_time) * X;
 
 		log_info("sleeping %d microseconds, s/n=%d, tid=%d",
 			x, n, thread_info->tid);
@@ -147,9 +150,11 @@ static bool check_hello(char *line) {
  * Verify that the sequence numbers embedded in the message are valid. They
  * are checked at the end of the verification process.
  *
+ * @param line the line to inspect
+ * @param n_threads the number of threads started
  * @return true if all fields can be parsed
  */
-bool check_thread(char *line) {
+bool check_thread(char *line, int n_threads) {
 	char date[32];
 	char time[32];
 	char level[16];
@@ -166,7 +171,7 @@ bool check_thread(char *line) {
 
 	if (n_converted != 7) return false;
 	
-	int index = get_index(tid);
+	int index = get_index(tid, n_threads);
 	if (index >= 0) {
 		// sequence_number is the number expected
 		// if it is correct, increment it for the next expected number
@@ -206,7 +211,7 @@ bool check_wait(char *line) {
 }
 
 /**
- * @fn void scan_file(char *)
+ * @fn void scan_file(char *, int, int)
 
  * @brief Check that the file produced is correct.
  *
@@ -216,10 +221,12 @@ bool check_wait(char *line) {
  * waits: after starting the threads, main waits for each one to exit
  *
  * @param pathname the name of the file to scan
+ * @param n_threads the number of threads expected
+ * @param n_loops the number of loops each thread executed
  *
  * @return true on success
  */
-bool scan_file(char *pathname) {
+bool scan_file(char *pathname, int n_threads, int n_loops) {
 	int	total_lines = 0;
 	int n_hellos = 0;
 	int n_sleeping = 0;
@@ -236,7 +243,7 @@ bool scan_file(char *pathname) {
 
 	// examine each message, and count the number of each type
 	while (fgets(buf, sizeof(buf), file) != NULL) {
-		if (check_thread(buf)) {
+		if (check_thread(buf, n_threads)) {
 			n_sleeping++;
 		} else if (check_hello(buf)) {
 			n_hellos++;
@@ -252,16 +259,16 @@ bool scan_file(char *pathname) {
 	fclose(file);
 
 	// make sure the sequence numbers for each thread's messages are correct
-	for (int n = 0; n < N_THREADS; n++) {
-		if (threads[n].sequence_number != N_LOOPS) {
+	for (int n = 0; n < n_threads; n++) {
+		if (threads[n].sequence_number != n_loops) {
 			printf("sequence error on thread %d: found %d\n",
 				threads[n].tid, threads[n].sequence_number);
 			success = false;
 		}
 	}
 
-	if (n_hellos != N_THREADS) success = false;
-	if (n_waits != N_THREADS) success = false;
+	if (n_hellos != n_threads) success = false;
+	if (n_waits != n_threads) success = false;
 
 	// print the totals so that they can be compared to the expected numbers
 	printf("%d records read, %d hellos, %d sleeping messages, %d waits\n",
@@ -289,11 +296,20 @@ int main(int argc, char *argv[]) {
 	log_formatter_t formatter = log_fmt_tall;
 	int rc;
 	char *filename = "beehive.log";
+	int n_threads = N_THREADS;
+	int n_loops = N_LOOPS;
+	useconds_t sleep_time = SLEEP_MICROS;
 
 	// test if user requested verification
 	for (int n = 1; n < argc; n++) {
 		if ((strcmp(argv[n], "-v") == 0)) {
 			do_verify = true;
+		} else if (strcmp(argv[n], "-q") == 0) {
+			n_threads /= 10;
+			n_loops /= 10;
+			sleep_time /= 10;
+		} else if (strcmp(argv[n], "-z") == 0) {
+			sleep_time = 0;
 		} else if (strcmp(argv[n], "-j") == 0) {
 			formatter = log_fmt_json;
 			filename = "beehive.json";
@@ -301,30 +317,21 @@ int main(int argc, char *argv[]) {
 			formatter = log_fmt_xml;
 			filename = "beehive.xml";
 		} else {
-			fprintf(stderr, "usage: %s [-v] [-j] [-x]\n", argv[0]);
+			fprintf(stderr, "usage: %s [-v] [-q] [-j] [-x]\n", argv[0]);
+			fprintf(stderr, "  -v selects verification (not available "
+				"for json or xml)\n");
+			fprintf(stderr, "  -q selects quick mode "
+				"(1/10 the normal threads and messages per thread)\n");
+			fprintf(stderr, "  -z sets 0 intermessage sleep time\n");
 			fprintf(stderr, "  -j selects json format\n");
 			fprintf(stderr, "  -x selects xml format\n");
-			fprintf(stderr, "  -v selects verification (not available "
-				"for json or xml\n");
 			exit(EXIT_FAILURE);
 		}
 	}
 
-	struct stat statbuf;
-	int status = stat(filename, &statbuf);
-
-	if ((formatter == log_fmt_tall) && do_verify) {
-		if (status != -1) {
-			printf("%s exists. Verify requires a fresh file to work\n",
-				filename);
-			exit(EXIT_FAILURE);
-		}
-	}
-
-	if (status != -1) {
-		printf("%s exists, press enter to append to it\n", filename);
-		getchar();
-	}
+	// verify requires log_fmt_tall and a fresh file (no append)
+	// start with a fresh file for all output formats
+	unlink(filename);
 
 	// don't use line buffering for bulk output
 	// speeds thing up a little
@@ -333,49 +340,44 @@ int main(int argc, char *argv[]) {
 		fprintf(stderr, "problem opening %s for appending\n", filename);
 		exit(EXIT_FAILURE);
 	}
-	(void) ch;	// quiet unused warning
-
-	if (ch == NULL) {
-		fprintf(stderr, "error opening channel\n");
-		exit(EXIT_FAILURE);
-	}
 
 	// start the threads
-	for (int n = 0; n < N_THREADS; n++) {
-		threads[n].count = N_LOOPS;
+	for (int n = 0; n < n_threads; n++) {
+		threads[n].count = n_loops;
+		threads[n].sleep_time = sleep_time;
 		snprintf(threads[n].name, NAME_LEN, "thread_%d", n);
 
 		// initialize sequence number for verification phase
 		threads[n].sequence_number = 0;
 
-		rc = pthread_create(&threads[n].thread_id, NULL, threadFunc, threads[n].name);
+		rc = pthread_create(&threads[n].thread_id, NULL,
+			threadFunc, threads[n].name);
 		if (rc != 0)
 			errExitEN(rc, "pthread create");
 	}
 
 	// wait for the threads to complete
-	for (int n = 0; n < N_THREADS; n++) {
-		log_info("waiting for thread %s tid = %d", threads[n].name, threads[n].tid);
+	for (int n = 0; n < n_threads; n++) {
+		log_info("waiting for thread %s tid = %d",
+			threads[n].name, threads[n].tid);
 		pthread_join(threads[n].thread_id, NULL);
 	}
 
 	// flush and close the output file
 	log_done();
 
-	printf("expecting %d threads, %d + 2 records per thread = %d total records\n",
-		N_THREADS, N_LOOPS, N_THREADS * (N_LOOPS + 2));
-	
-	status = EXIT_SUCCESS;
-
 	// scanners are expecting log_fmt_tall
 	// xml and json are verified by external programs
 	if ((formatter == log_fmt_tall) && do_verify) {
-		bool success = scan_file(filename);
+		printf("expecting %d threads, %d + 2 "
+			"records per thread = %d total records\n",
+		n_threads, n_loops, n_threads * (n_loops + 2));
+		bool success = scan_file(filename, n_threads, n_loops);
 		printf("Verify %s\n", success ? "succeeded" : "failed");
 		if (!success) {
-			status = EXIT_FAILURE;
+			exit(EXIT_FAILURE);
 		}
 	}
 
-	return status;
+	return EXIT_SUCCESS;
 }
