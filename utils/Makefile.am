@@ -1,5 +1,5 @@
 
-noinst_SCRIPTS = check-symbols regression
+noinst_SCRIPTS = check-symbols regression gen-json-examples
 CLEANFILES = $(noinst_SCRIPTS)  # for make clean to remove them
 
 EXTRA_DIST = check-symbols.sh regression.sh
