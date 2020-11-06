@@ -194,21 +194,11 @@ void try_one_at_a_time(struct format_test *test, struct result *result, int n_ms
  * @fn int main(void)
  * Run an elapsed time test using each message formatter
  */
-int main(int argc, char **argv) {
+int main() {
 	struct timespec ts_start;
 	struct timespec ts_end;
 	struct tm   tm;
 	long long elapsed_time;
-	bool quick = false;
-
-	// the "--quick" option was added to make acceptance test quicker
-	if (argc == 2) {
-		int status = strcmp("--quick", argv[1]);
-		if (status == 0) {
-			quick = true;
-		}
-	}
-	(void) quick;
 
 	// check clock_gettime()
 	clock_gettime(CLOCK_REALTIME, &ts_start);
