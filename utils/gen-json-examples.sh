@@ -3,7 +3,14 @@
 # generate logs using all the four possible combinations of enabling timezone
 # and json-header
 
-# Note: this requires 4 configuration/build cycles - don't be alarmed!
+# Only works from the top source dir, with autotools. And it must be run from
+# the top source dir like this:
+# $ utils/gen-json-examples.sh
+
+# And, if you have been using the quick-start configuration, remember to run
+# autoreconf -i first.
+
+# Note: this runs 4 configuration/build cycles - don't be alarmed!
 
 CLEAN_FILES=(
 	tinylogger.json
