@@ -15,6 +15,7 @@ noinst_PROGRAMS = \
 	hello_world \
 	second \
 	formats \
+	stream-of-logs \
 	levels \
 	threads \
 	beehive \
@@ -44,6 +45,9 @@ second_LDADD = ../src/libtinylogger.la
 
 formats_SOURCES = formats.c
 formats_LDADD = ../src/libtinylogger.la
+
+stream_of_logs_SOURCES = stream-of-logs.c
+stream_of_logs_LDADD = ../src/libtinylogger.la
 
 threads_SOURCES = threads.c
 threads_LDADD = $(COMMON_LIBS)
