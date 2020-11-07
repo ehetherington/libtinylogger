@@ -62,28 +62,35 @@ static void inthandler(int sig) {
 // illustrate certain aspects of the example.
 #define N_MSGS			(500)
 #define SLEEP_MICROS	(100 * 1000)
-static void *threadFunc(void *parm) {
+#define ONE_SECOND		(1000 * 1000)
+
+struct thread_params {
+	char *name;
+	int sleep_micros;
+} thread_params;
+
+static void *threadFunc(void *param) {
 	pthread_t thread = pthread_self();
 	pid_t tid = syscall(__NR_gettid);	// or SYS_gettid
 	int	msg_sn = 1;
 
+	struct thread_params *thread_params;
+	if (param == NULL) exit(EXIT_FAILURE);
+	thread_params = (struct thread_params *) param;
+
+
 	int rc;
 
-	char *name;
-
-	if (parm != NULL) {
-		name = parm;
-	} else {
-		name = "oops";
-	}
-	log_info("setting thread name to %s (%d) (%ld)", name, tid, thread);
-	rc = pthread_setname_np(thread, parm);
+	log_info("setting thread name to %s (%d) (%ld)",
+		thread_params->name, tid, thread);
+	rc = pthread_setname_np(thread, thread_params->name);
 	if (rc != 0)
-		errExitEN(rc, "pthread set name");
+		errExitEN(rc, "pthread setting name");
 
 	for (int n = 0; n < N_MSGS; n++) {
-		log_info("hello from %s (%d) message number %d", name, tid, msg_sn++);
-		usleep(SLEEP_MICROS);
+		log_info("hello from %s (%d) message number %d",
+			thread_params->name, tid, msg_sn++);
+		usleep(thread_params->sleep_micros);
 	}
 	return NULL;
 }
@@ -93,9 +100,10 @@ static char *filename = "logrotate.log";
 static void print_help(char *progname) {
 	fprintf(stderr, "usage: %s [-h] [-p] [-j] [-x]\n", progname);
 	fprintf(stderr, "  -p selects programmatic logrotate\n");
-	fprintf(stderr, "     (defaults to simulating actual logrotate\n");
+	fprintf(stderr, "     (default is to simulating actual logrotate\n");
 	fprintf(stderr, "  -x selects xml format\n");
 	fprintf(stderr, "  -j selects json format\n");
+	fprintf(stderr, "  -q selects \"quick\" mode for testing\n");
 	fprintf(stderr, "  -h prints this help and exits\n");
 }
 
@@ -106,6 +114,10 @@ int main(int argc, char **argv) {
 	char *proc_comm;
 	LOG_CHANNEL *ch1;
 	char buf[FILENAME_MAX];
+	int one_second = ONE_SECOND;
+
+	thread_params.name = "worker";
+	thread_params.sleep_micros = SLEEP_MICROS;
 
 	log_formatter_t formatter = log_fmt_debug_tall;
 	bool programmatic = false;
@@ -120,6 +132,9 @@ int main(int argc, char **argv) {
 		} else if (strcmp(argv[n], "-x") == 0) {
 			formatter = log_fmt_xml;
 			filename = "logrotate.xml";
+		} else if (strcmp(argv[n], "-q") == 0) {
+			thread_params.sleep_micros /= 10;
+			one_second /= 10;
 		} else if (strcmp(argv[n], "-h") == 0) {
 			print_help(argv[0]);
 			exit(EXIT_SUCCESS);
@@ -128,7 +143,6 @@ int main(int argc, char **argv) {
 			exit(EXIT_FAILURE);
 		}
 	}
-
 
 	/*
 	 * get the pid of this process - needed for the kill command
@@ -166,6 +180,19 @@ int main(int argc, char **argv) {
 		perror("setting INT handler\n");
 		fprintf(stderr, "error setting INT handler\n");
 		exit(EXIT_FAILURE);
+	}
+
+	/*
+	 * If we are going to use JSON, set a header "note". The JSON format
+	 * is the only one that uses it.
+	 *
+     * log_set_json_notes() only has an effect if the library was compiled with
+     * ENABLE_JSON_HEADER. ("notes" is a field in the header)
+     */
+
+	if (formatter == log_fmt_json) {
+		log_set_json_notes(
+			"This is the first log. Its first record is sequence 1");
 	}
 
 	/*
@@ -209,7 +236,7 @@ int main(int argc, char **argv) {
 	/*
 	 * start a thread to create log messages
 	 */
-	status = pthread_create(&worker, NULL, threadFunc, "worker");
+	status = pthread_create(&worker, NULL, threadFunc, &thread_params);
 	if (status != 0)
 		errExitEN(status, "pthread create");
 
@@ -228,7 +255,7 @@ int main(int argc, char **argv) {
 		if ((n % 5) == 0) {
 			system(lscmd);
 		}
-		sleep(1);
+		usleep(one_second);
 	}
 
 
@@ -242,7 +269,17 @@ int main(int argc, char **argv) {
 	printf("===== it will continue to grow until the channel is re-opened\n");
 	for (int n = 0; n < 5; n++) {
 		system(lscmd);
-		sleep(1);
+		usleep(one_second);
+	}
+
+	/*
+	 * If we are going to use JSON, set a header "note". The JSON format
+	 * is the only one that uses it.
+	 * If we don't change the "notes", it will use what was previously set.
+	 */
+	if (formatter == log_fmt_json) {
+		log_set_json_notes(
+			"This is the second log. Its first record is sequence 1 also");
 	}
 
 	/*
@@ -264,7 +301,7 @@ int main(int argc, char **argv) {
 		if ((n % 5) == 0) {
 			system(lscmd);
 		}
-		sleep(1);
+		usleep(one_second);
 	}
 
 	/*
@@ -280,7 +317,7 @@ int main(int argc, char **argv) {
 		if ((n % 5) == 0) {
 			system(lscmd);
 		}
-		sleep(1);
+		usleep(one_second);
 	}
 
 	printf("===== wait until the worker thread is done\n");
