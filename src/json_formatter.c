@@ -77,6 +77,9 @@
 #include <unistd.h>
 #include <string.h>
 #include <pthread.h>
+#include <fcntl.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <sys/syscall.h>
 #include <linux/limits.h>
 
@@ -131,70 +134,27 @@ static char *escape_json(char const *input, char *buf, int len) {
 	return buf;
 }
 
-/**
- * @fn int log_do_json_head(FILE *stream)
- * @brief Write the json prolog
- *
- * The opening
- * ```
- * {
- *   "records" : [ 
- * ```
- * is written.
- * @param stream the stream in use
- * @return the number of bytes written
- */
-int log_do_json_head(FILE *stream) {
-	return fprintf(stream, "{\n  \"records\" : [");
-}
+#if ENABLE_JSON_HEADER
+#define HOSTNAME_FILE "/proc/sys/kernel/hostname"
+static inline char *get_hostname() {
+	static char hostname[64] = {0};
+	static bool init_done = false;
+	int fd;
+	char *newline;
 
-/**
- * @fn int log_do_json_tail(FILE *stream)
- * @brief Write the json epilog
- * @details Not really part of the API. Public so that tinylogger.c can use it.
- *
- * The closing
- * ```
- *  ]
- * }
- * ```
- * is written.
- * @param stream the stream in use
- * @return the number of bytes written
- */
-int log_do_json_tail(FILE *stream) {
-	return fprintf(stream, " ]\n}\n");
-}
+	if (init_done) return hostname;
 
-static int do_json_start(FILE *stream, int sequence) {
-	return fprintf(stream, "%s  {\n", sequence > 1 ? "," : "");
-}
+	fd = open(HOSTNAME_FILE, O_RDONLY);
+	if (fd != -1) {
+		read(fd, hostname, sizeof(hostname) - 1);
+		newline = index(hostname, '\n');
+		if (newline != NULL) *newline = '\0';
+	}
+	init_done = true;
 
-static int do_json_timespec(FILE *stream, struct timespec *timespec) {
-	int n_written = 0;
-	n_written += fprintf(stream, "    \"timespec\" : {\n"
-								 "      \"sec\" : %ld,\n",
-		timespec->tv_sec);
-	n_written += fprintf(stream, "      \"nsec\" : %ld\n    },\n",
-		timespec->tv_nsec);
-	return n_written;
+	return hostname;
 }
-
-static int do_json_text(FILE *stream,
-	char const *label, char const *value, bool do_comma) {
-	return fprintf(stream, "    \"%s\" : \"%s\"%s\n",
-		label, value, do_comma ? "," : "");
-}
-
-static int do_json_int(FILE *stream,
-	char const *label, long const value, bool do_comma) {
-	return fprintf(stream, "    \"%s\" : %ld%s\n",
-		label, value, do_comma ? "," : "");
-}
-
-static int do_json_end(FILE *stream) {
-	return fprintf(stream, "  }");
-}
+#endif /* ENABLE_JSON_HEADER */
 
 // not re-entrant, but only called from mutex protected code
 static inline char *get_timezone() {
@@ -233,11 +193,127 @@ static inline void json_format_timestamp(struct timespec *ts,
 #pragma GCC diagnostic ignored "-Wstringop-overflow"
 	strncat(buf, get_timezone(), buf_len);
 #pragma GCC diagnostic pop
+}
 
+#if ENABLE_JSON_HEADER
+static inline int do_header(FILE *stream, char *notes) {
+	char notes_buf[512] = {0};
+    char date[TIMESTAMP_LEN + TIMEZONE_LEN];
+	struct timespec ts;
+
+	// get an timestamp
+	clock_gettime(CLOCK_REALTIME, &ts);
+
+#if ENABLE_TIMEZONE
+	json_format_timestamp(&ts, date, sizeof(date));
+#else
+	log_format_timestamp(&ts, FMT_UTC_OFFSET | FMT_ISO | SP_NANO,
+		date, sizeof(date));
+#endif /* ENABLE_TIMEZONE */
+
+	if (notes == NULL) {
+		snprintf(notes_buf, sizeof(notes_buf), "null");
+	} else {
+		escape_json(notes, notes_buf + 1, sizeof(notes_buf) - 2);
+		notes_buf[0] = '"';
+		strcat(notes_buf, "\"");
+	}
+
+	return fprintf(stream,	"  \"logHeader\" : {\n"
+							"    \"startDate\" : \"%s\",\n"
+							"    \"hostname\" : \"%s\",\n"
+							"    \"notes\" : %s\n  },",
+					date, get_hostname(), notes_buf);
+}
+#endif /* ENABLE_JSON_HEADER */
+
+/**
+ * @fn int log_do_json_head(FILE *stream, char *notes)
+ * @brief Write the json prolog
+ *
+ * The opening
+ * ```
+ * {
+ *   "records" : [ 
+ * ```
+ * is written.
+ * @param stream the stream in use
+ * @param notes the notes to be included in the header (may be NULL)
+ * @return the number of bytes written
+ * @note This is not part of the API, and should not be public. This is an
+ * artifact of it being needed by the main tinylogger.c file.
+ */
+int log_do_json_head(FILE *stream, char *notes) {
+	int n_written = 0;
+#if ENABLE_JSON_HEADER
+	n_written = fprintf(stream, "{\n");
+	n_written += do_header(stream, notes);
+	n_written += fprintf(stream, " \"records\" : [");
+#else
+	(void) notes;
+	n_written = fprintf(stream, "{\n  \"records\" : [");
+#endif
+	return n_written;
 }
 
 /**
- * @fn int log_fmt_json(FILE *stream, int sequence, struct timespec *ts, int level,
+ * @fn int log_do_json_tail(FILE *stream)
+ * @brief Write the json epilog
+ * @details Not really part of the API. Public so that tinylogger.c can use it.
+ *
+ * The closing
+ * ```
+ *  ]
+ * }
+ * ```
+ * is written.
+ * @param stream the stream in use
+ * @return the number of bytes written
+ * @note This is not part of the API, and should not be public. This is an
+ * artifact of it being needed by the main tinylogger.c file.
+ */
+int log_do_json_tail(FILE *stream) {
+	return fprintf(stream, " ]\n}\n");
+}
+
+static int do_json_start(FILE *stream, int sequence, bool records) {
+	return records ?
+				fprintf(stream, "{\n") :
+				fprintf(stream, "%s  {\n", sequence > 1 ? "," : "");
+}
+
+static int do_json_timespec(FILE *stream, struct timespec *timespec) {
+	return fprintf(stream,	"    \"timespec\" : {\n"
+							"      \"sec\" : %ld,\n"
+							"      \"nsec\" : %ld\n    },\n",
+					timespec->tv_sec, timespec->tv_nsec);
+}
+
+static int do_json_text(FILE *stream,
+	char const *label, char const *value, bool do_comma) {
+	return fprintf(stream, "    \"%s\" : \"%s\"%s\n",
+		label, value, do_comma ? "," : "");
+}
+
+static int do_json_int(FILE *stream,
+	char const *label, long const value, bool do_comma) {
+	return fprintf(stream, "    \"%s\" : %ld%s\n",
+		label, value, do_comma ? "," : "");
+}
+
+/**
+ * End-of-Record
+ * If we are producing a Log, the next record will insert a comma to separate
+ * the list of record elements, or the End-of-Log will be appended at stream
+ * end.
+ * If we are producing a list of records, no comma will be necessary.
+ */
+static int do_json_end(FILE *stream, bool records) {
+	return fprintf(stream, records ? "}\n" :"  }");
+}
+
+/**
+ * @fn int _log_fmt_json(FILE *stream, int sequence, struct timespec *ts, int level,
  * const char *file, const char *function, int line, char *msg)
  * @brief Output messages with timestamp, level and message.
  * @param stream the output stream to write to
@@ -248,11 +324,11 @@ static inline void json_format_timestamp(struct timespec *ts,
  * @param function the name of the function to print
  * @param line the line number to print
  * @param msg the actual use message to print
+ * @param records select a log with an array of records, or a stream of records
  * @return the number of characters written.
- *
  */
-int log_fmt_json(FILE *stream, int sequence, struct timespec *ts, int level,
-    const char *file, const char *function, int line, char *msg) {
+static int _log_fmt_json(FILE *stream, int sequence, struct timespec *ts, int level,
+    const char *file, const char *function, int line, char *msg, bool records) {
     char date[TIMESTAMP_LEN + TIMEZONE_LEN];
 	char buf[BUFSIZ] = {0};
 
@@ -279,7 +355,7 @@ int log_fmt_json(FILE *stream, int sequence, struct timespec *ts, int level,
 		date, sizeof(date));
 #endif
 
-	n_written += do_json_start(stream, sequence);
+	n_written += do_json_start(stream, sequence, records);
 	n_written += do_json_text(stream, "isoDateTime", date, true);
 	n_written += do_json_timespec(stream, ts);
 	n_written += do_json_int(stream, "sequence", sequence, true);
@@ -291,8 +367,61 @@ int log_fmt_json(FILE *stream, int sequence, struct timespec *ts, int level,
 	n_written += do_json_int(stream, "threadId", syscall(SYS_gettid), true);
 	n_written += do_json_text(stream, "threadName", thread_name, true);
 	n_written += do_json_text(stream, "message", buf, false);
-	n_written += do_json_end(stream);
+	n_written += do_json_end(stream, records);
 
 	return n_written;
 }
 
+/**
+ * @fn int log_fmt_json(FILE *stream, int sequence,
+ *           struct timespec *ts, int level,
+ *           const char *file, const char *function, int line, char *msg)
+ * @brief Output messages with timestamp, level and message.
+ *
+ * @details Use log_fmt_json for logs that are a log object with an array
+ *          of records. While the head and tail of the Log are separately
+ *          generated, the records in a log must be separated by commas,
+ *          as they are elements of an array.
+ *
+ * @param stream the output stream to write to
+ * @param sequence the sequence number of the message
+ * @param ts the struct timespec timestamp
+ * @param level the log level to print
+ * @param file the name of the file to print
+ * @param function the name of the function to print
+ * @param line the line number to print
+ * @param msg the actual use message to print
+ * @return the number of characters written.
+ */
+int log_fmt_json(FILE *stream,
+        int sequence, struct timespec *ts, int level,
+        const char *file, const char *function, int line, char *msg) {
+	return _log_fmt_json(stream, sequence, ts, level,
+		file, function, line, msg, false);
+}
+
+/**
+ * @fn int log_fmt_json_records(FILE *stream, int sequence,
+ *           struct timespec *ts, int level,
+ *           const char *file, const char *function, int line, char *msg)
+ * @brief Output messages with timestamp, level and message.
+ *
+ * @details Use log_fmt_json_records for logs that are a series of record
+ *          objects. Each record is a separate object - no separating commas.
+ *
+ * @param stream the output stream to write to
+ * @param sequence the sequence number of the message
+ * @param ts the struct timespec timestamp
+ * @param level the log level to print
+ * @param file the name of the file to print
+ * @param function the name of the function to print
+ * @param line the line number to print
+ * @param msg the actual use message to print
+ * @return the number of characters written.
+ */
+int log_fmt_json_records(FILE *stream,
+        int sequence, struct timespec *ts, int level,
+        const char *file, const char *function, int line, char *msg) {
+	return _log_fmt_json(stream, sequence, ts, level,
+		file, function, line, msg, true);
+}
