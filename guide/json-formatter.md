@@ -1,8 +1,15 @@
 # JSON formatter
 ## JSON Message formatting and output
-The format mostly mimics the java.util.logging.XMLFormatter output.
 
-The JSON output is an array of records. The record objects are:
+There are two compile time options that may be enabled.
+
+- [Olson timezones](#enabling-timezone)
+- [log header](#enabling-log-header)
+
+### Basic Log and Record formats
+
+The JSON output is a `log` object containing an array of records. The record
+objects are:
 
  - `isoDateTime` The message timestamp - it includes UTC offset, and may
                  optionally include Olson timezone. See [enabling timezone]
@@ -37,7 +44,7 @@ macros.
 `message` is the actual user message.
 
 
-Example output:
+Example output with the `log` object containing an array of `record` objects:
 ```
 {
   "records" : [  {
@@ -96,7 +103,7 @@ system may have its configuration modified. And the user can override the
 system default by setting the TZ variable in the environment. For these reasons,
 supporting timezone must be enabled at compile time.
 
-_If this feature is enabled, the timezone will be appended only if a matching
+If this feature is enabled, the timezone will be appended only if a matching
 zoneinfo file in the zoneinfo database directory exists following the rules
 used by tzset(3). If it fails to find one, the normal isoDateTime without a
 timezone appended will be used. This is done to ensure the timezone used
@@ -128,13 +135,14 @@ file.
 
 ### autoconf configuration
 There is an option to the configure script to enable use of timezones in JSON
-output.
+output. In the top directory:
 
 ```
+$ autoreconf -i
 $ ./configure --enable-timezone
 $ make
 ```
-### JSON isoDateTime field with and without timezone
+### JSON isoDateTime field with and without Olson timezone
 
 With:
 ```
@@ -181,3 +189,77 @@ An example of a complete log file with Olson timezones enabled:
   } ]
 }
 ```
+## Enabling header object <a name="enabling-log-header"/>
+
+A header for the log file can be enabled at compile time.
+
+The header is a `logHeader` object that consists of:
+
+ - `logHeader`
+     - `startDate` A timestamp of when the channel was configured
+     - `hostname`  The hostname obtained from /proc/sys/kernel/hostname
+     - `notes`     Notes added by `log_set_json_notes()` BEFORE the channel is
+                   opened
+
+A sample log with both the header and Olson timezone options enabled:
+
+```
+
+{
+  "logHeader" : {
+    "startDate" : "2020-11-06T23:45:18.321777407-05:00[America/New_York]",
+    "hostname" : "sambashare",
+    "notes" : "this is log 3 - it's sequence also starts at 1"
+  }, "records" : [  {
+    "isoDateTime" : "2020-11-06T23:45:18.321799100-05:00[America/New_York]",
+    "timespec" : {
+      "sec" : 1604724318,
+      "nsec" : 321799100
+    },
+    "sequence" : 1,
+    "logger" : "tinylogger",
+    "level" : "INFO",
+    "file" : "stream-of-logs.c",
+    "function" : "main",
+    "line" : 30,
+    "threadId" : 50759,
+    "threadName" : "stream-of-logs",
+    "message" : "five"
+  },  {
+    "isoDateTime" : "2020-11-06T23:45:18.321870267-05:00[America/New_York]",
+    "timespec" : {
+      "sec" : 1604724318,
+      "nsec" : 321870267
+    },
+    "sequence" : 2,
+    "logger" : "tinylogger",
+    "level" : "INFO",
+    "file" : "stream-of-logs.c",
+    "function" : "main",
+    "line" : 31,
+    "threadId" : 50759,
+    "threadName" : "stream-of-logs",
+    "message" : "six"
+  } ]
+}
+
+```
+
+To configure:
+```
+$ autoreconf -i
+$ ./configure --enable-json-header
+$ make
+```
+For both options:
+```
+$ autoreconf -i
+$ ./configure --enable-timezone --enable-json-header
+$ make
+```
+
+For the quick-start configuration, edit the quick-start/config.h file.
+
+
+json.c, logrotate.c, and stream-of-logs.c are example programs in the demo directory,
+
