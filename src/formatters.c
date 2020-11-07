@@ -6,10 +6,19 @@
 /** @file       formatters.c
  *  @brief      Message formatting and output
  *  @details    This is a list of the pre-defined simple message formatters.
- *  log_format_timestamp() and log_get_level() are exceptions. The most important
- *  detail of each log_fmt_xxx() function is the "Example output" - they all
- *  get common parameters. log_fmt_elapsed_time() is also a useful format -
- *  take a look at it.
+ *
+ *  The most important detail of each log_fmt_xxx() function is the "Example output" - they all
+ *  get common parameters.
+ *
+ *  log_fmt_elapsed_time() is unusual as it uses an elapsed time timestamp.
+ *
+ *  log_format_timestamp() and log_get_level() are not message formatters.
+ *
+ *  log_format_timestamp() is exposed for use by custom message formatters.
+ *
+ *  log_get_level() is useful for processing a command line argument that
+ *  specifies a log level.
+ *  
  *  @author     Edward Hetherington
  */
 
@@ -49,12 +58,6 @@
  * appropriate systemd value. Systemd macros were assigned values relative to the
  * java ones.
  */
-//struct log_label {
-//    char *english;  /**< label used for most formats */
-//    char *systemd;  /**< label used for systemd format */
-//    int java_level; /**< java equivalent level */
-//};
-
 struct log_label log_labels[]  = {
     {"EMERG",   SD_EMERG,  1300},
     {"ALERT",   SD_ALERT,  1200},
@@ -75,8 +78,8 @@ struct log_label log_labels[]  = {
  * @fn LOG_LEVEL log_get_level(const char *label)
  * @brief Look up LOG_LEVEL for a certain string.
  *
- * Look up the numeric (enum) value using the label as a key. Useful
- * for command line argument processing to see if a user supplied option
+ * Look up the corresponding numeric (enum) value using the label as a key.
+ * Useful for command line argument processing to see if a user supplied option
  * is valid, and if so, set the requested LOG_LEVEL.
  * @param label the string in question
  * @return LL_INVALID if the string is not valid log level, otherwise the
@@ -126,48 +129,53 @@ static char *fmt_sec  = "%+03ld:%02ld:%02ld";
 }
 
 /**
- * @fn void log_format_timestamp(struct timespec *ts, SEC_PRECISION precision,
+ * @fn void log_format_timestamp(struct timespec *ts, LOG_TS_FORMAT format,
  * 	char *buf, int len)
  * @brief Format the (struct timespec) ts to an ascii string in buf.
  *
  * @details This is a utility function for use by the main message formatters to
  * format the timestamp portion of the log message.
  *
- * It is made "public" for use by custom message formatters.
- *
- * The fractional seconds appended is specified by the SEC_PRECISION precision.
+ * The fractional seconds appended is specified by the LOG_TS_FORMAT format.
  *
  *  - SP_NONE     no fraction is appended
  *  - SP_MILLI    .nnn is appended
  *  - SP_MICRO    .nnnnnn is appended
  *  - SP_NANO     .nnnnnnnnn is appended
  *
+ *  Other bits available in format:
+ *  - FMT_ISO = 16,         'T' instead of ' '
+ *  - FMT_UTC_OFFSET = 32,  add UTC offset "+00:00"
+ *  - FMT_DELTA = 64,       print an elapsed time (used in
+ *                          log_format_elapsed_time())
+ *
  * @param ts the previously obtained struct timespec timestamp.
- * @param precision the precision of the fraction of second to display
+ * @param format the format of the fraction of second to display
  * @param buf the buffer to format the timestamp to
  * @param len the length of that buffer. Must be >= TIMESTAMP_LEN
+ * @note Exposed as public for use by custom message formatters.
  */
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat-truncation"
-void log_format_timestamp(struct timespec *ts, SEC_PRECISION precision,
+void log_format_timestamp(struct timespec *ts, LOG_TS_FORMAT format,
 	char *buf, int len) {
 	struct tm	tm;
 	char const *fmt = FMT_STRING_STD;
 	bool want_offset = false;
 
-	if (precision >= LOG_FMT_DELTA) {
-		log_format_delta(ts, precision, buf, len);
+	if (format >= LOG_FMT_DELTA) {
+		log_format_delta(ts, format, buf, len);
 		return;
 	}
 
-	if (precision & FMT_ISO) {
+	if (format & FMT_ISO) {
 		fmt = FMT_STRING_ISO;
-		precision &= ~FMT_ISO;
+		format &= ~FMT_ISO;
 	}
 
-	if (precision & FMT_UTC_OFFSET) {
+	if (format & FMT_UTC_OFFSET) {
 		want_offset = true;
-		precision &= ~FMT_UTC_OFFSET;
+		format &= ~FMT_UTC_OFFSET;
 	}
 
 	if ((buf == NULL) || (len < TIMESTAMP_LEN)) {
@@ -182,7 +190,7 @@ void log_format_timestamp(struct timespec *ts, SEC_PRECISION precision,
 			tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
 			tm.tm_hour, tm.tm_min, tm.tm_sec,
 			ts->tv_nsec);
-		switch (precision) {
+		switch (format) {
 			case SP_NONE:  buf[19] = '\0'; break;
 			case SP_MILLI: buf[23] = '\0'; break;
 			case SP_MICRO: buf[26] = '\0'; break;
@@ -200,9 +208,9 @@ void log_format_timestamp(struct timespec *ts, SEC_PRECISION precision,
 }
 #pragma GCC diagnostic pop
 
-// many formats don't use all parameters
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
+
 /**
  * @fn int log_fmt_basic(FILE *, int sequence, struct timespec *, int,
  * const char *, const char *, int, char *)
