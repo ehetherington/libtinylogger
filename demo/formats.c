@@ -43,9 +43,7 @@ int log_fmt_custom_1(FILE *stream, int sequence, struct timespec *ts, int level,
 
 	// suppress "unused" warnings
 	(void) sequence;
-	(void) file;
-	(void) function;
-	(void) line;
+	(void) file; (void) function; (void) line;
 
 	// date
 	if (localtime_r(&(ts->tv_sec), &tm) == &tm) {
