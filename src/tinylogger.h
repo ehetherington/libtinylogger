@@ -9,8 +9,6 @@
  *  @author     Edward Hetherington
  */
 
-//#include "config.h"
-
 #ifndef _TINYLOGGER_H
 #define _TINYLOGGER_H 1
 
@@ -97,10 +95,10 @@ typedef enum {
 	FMT_UTC_OFFSET = 32,	/**< add UTC offset "+00:00" */
 	LOG_FMT_DELTA = 64,	    /**< print an elapsed time   */
 	LOG_FMT_HMS = 128	    /**< elapsed time in H:M:S   */
-} SEC_PRECISION;
+} LOG_TS_FORMAT;
 
 struct _logChannel;
-/** Opaque */
+/** make opaque - library users shouldn't see implementation details */
 typedef struct _logChannel LOG_CHANNEL;
 
 void log_set_pre_init_level(LOG_LEVEL log_level);
@@ -112,15 +110,20 @@ bool log_select_clock(clockid_t clock_id);
 /* channel control */
 LOG_CHANNEL *log_open_channel_s(FILE *, LOG_LEVEL, log_formatter_t);
 LOG_CHANNEL *log_open_channel_f(char *, LOG_LEVEL, log_formatter_t, bool);
-int log_msg(int level, const char *file, const char *function,
-	const int line, const char *format, ...);
-int log_mem(int const level, void const * const mem, int const len,
-	char const *file, char const *function, int const line,
-	char const *format, ...);
 int log_change_params(LOG_CHANNEL *, LOG_LEVEL, log_formatter_t);
 int log_reopen_channel(LOG_CHANNEL *);
 int log_close_channel(LOG_CHANNEL *);
 void log_done(void);
+void log_set_json_notes(char *);
+
+/* log a message */
+int log_msg(int level,
+	char const * file, char const * function, int line,
+	char const * format, ...) __attribute__((format (printf, 5, 6)));
+/* format and log a memory region */
+int log_mem(int level, void const * mem, int len,
+	char const * file, char const * function, int line,
+	char const * format, ...) __attribute__((format (printf, 7, 8)));
 
 /* control logrotate support */
 int log_enable_logrotate(int signal);
@@ -136,11 +139,13 @@ int log_fmt_debug_tname(FILE *, int, struct timespec *, int, const char *, const
 int log_fmt_debug_tall(FILE *, int, struct timespec *, int, const char *, const char *, int, char *);
 int log_fmt_elapsed_time(FILE *, int, struct timespec *, int, const char *, const char *, int, char *);
 int log_fmt_xml(FILE *, int, struct timespec *, int, const char *, const char *, int, char *);
+int log_fmt_xml_records(FILE *, int, struct timespec *, int, const char *, const char *, int, char *);
 int log_fmt_json(FILE *, int, struct timespec *, int, const char *, const char *, int, char *);
+int log_fmt_json_records(FILE *, int, struct timespec *, int, const char *, const char *, int, char *);
 
 /* timestamp formatters for use by the main formatters */
-void log_format_timestamp(struct timespec *ts, SEC_PRECISION precision, char *buf, int len);
-void log_format_delta(struct timespec *ts, SEC_PRECISION precision, char *buf, int len);
+void log_format_timestamp(struct timespec *ts, LOG_TS_FORMAT precision, char *buf, int len);
+void log_format_delta(struct timespec *ts, LOG_TS_FORMAT precision, char *buf, int len);
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
 TL_END_C_DECLS
