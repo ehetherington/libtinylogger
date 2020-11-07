@@ -57,6 +57,7 @@ fi
 # create and populate the include dir
 mkdir -p "$INC_DIR"
 cp "$TOP_SRCDIR"/src/tinylogger.h "$INC_DIR"
+#cp "$SCRIPT_DIR"/config.h "$INC_DIR"
 
 # create a lib directory to deposit the library
 mkdir -p $LIB_DIR
