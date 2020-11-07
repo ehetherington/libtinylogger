@@ -4,8 +4,9 @@
  */
 
 /**	@file		tinylogger.c
- *	@brief		The tinylogger source file.
- *	@details	A small logging facility for small linux projects.
+ *	@brief		A small logging facility for small linux projects.
+ *	@detail     This project is specific to linux and gcc. Porting it to
+ *	            different environments is probably a decent amount of work.
  *	@author		Edward Hetherington
  */
 
@@ -34,10 +35,21 @@
 #include "private.h"
 
 /**
+ * The user messages are limited to MAX_MSG_SIZE characters. This does not
+ * include information added by log_msg().
+ *
+ * If using large memory dumps with log_mem(), you may want to remove any
+ * limit by setting MAX_MSG_SIZE to 0.
+ *
  * To configure with configure (autotools)
- * $ MAX_MSG_SIZE=xxxx ./configure
+
+```
+$ MAX_MSG_SIZE=xxxx ./configure
+```
+
  * To configure with the quick-start setup edit the config.h in the quick-start
  * directory.
+ *
  * 0 = unlimited - uses asprintf
  */
 #ifndef MAX_MSG_SIZE
@@ -69,6 +81,7 @@ static pthread_mutex_t log_lock = PTHREAD_MUTEX_INITIALIZER;
  * @struct log_config
  * Parameters common to all (both) channels.
  */
+#ifndef DOXYGEN_SHOULD_SKIP_THIS
 static struct log_config {
 	char *json_notes;	/**< notes to be used in future json format logs */
 	clockid_t clock_id;	/**< The clock used for timestamps */
@@ -78,6 +91,7 @@ static struct log_config {
 	.clock_id = CLOCK_REALTIME,
 	.ts = {0}
 };
+#endif /* DOXYGEN_SHOULD_SKIP_THIS */
 
 /**
  * Threads accessing log_channels[]
@@ -97,6 +111,7 @@ static struct _logChannel log_channels[] = {
 /**
  * Parameters used to support logrotate
  */
+#ifndef DOXYGEN_SHOULD_SKIP_THIS
 static struct rotate_config {
 	int			signal;
 	bool		thread_running;
@@ -106,6 +121,7 @@ static struct rotate_config {
 	.thread_running = false,
 	.log_thread = 0
 };
+#endif /* DOXYGEN_SHOULD_SKIP_THIS */
 
 /**
  * @fn LOG_CHANNEL *get_channel(void)
@@ -958,8 +974,12 @@ unlock:
  * Moving an output file to a new place, and sending the log rotate signal
  * saves the current state of the log file, and opens a new file to continue
  * logging to.
+ * 
+ * See /usr/include/linux/signal.h or `man kill` for signal definitions. Or
+ * look at logrotate.c in demo/examples.
  *
- * The thread may be stopped by passing a value of 0 for the signal.
+ * To stop the thread, pass a value of 0 for the signal.
+ *
  * @param signal The number of the signal to use.
  * @return 0 on success
  */
