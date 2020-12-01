@@ -5,7 +5,7 @@
 
 /**	@file		tinylogger.c
  *	@brief		A small logging facility for small linux projects.
- *	@detail     This project is specific to linux and gcc. Porting it to
+ *	@details    This project is specific to linux and gcc. Porting it to
  *	            different environments is probably a decent amount of work.
  *	@author		Edward Hetherington
  */
@@ -276,10 +276,10 @@ static bool _reopen_channel(LOG_CHANNEL *channel) {
 		fclose(channel->stream);
 
 		// open the file in append mode
-		FILE *file = fopen(channel->pathname, "a");
+		channel->stream = fopen(channel->pathname, "a");
 
 		// check for failure
-		if (file == NULL) {
+		if (channel->stream == NULL) {
 			err_msg = strerror_r(errno, buf, sizeof(buf));
 			log_report_error("can't reopen file %s:%s\n", channel->pathname, err_msg);
 			free(channel->pathname);
@@ -288,7 +288,7 @@ static bool _reopen_channel(LOG_CHANNEL *channel) {
 		}
 
 		// set line buffered output, if requested
-		if (channel->line_buffered && setvbuf(file, NULL, _IOLBF, BUFSIZ)) {
+		if (channel->line_buffered && setvbuf(channel->stream, NULL, _IOLBF, BUFSIZ)) {
 			err_msg = strerror_r(errno, buf, sizeof(buf));
 			log_report_error("can't set line buffering on %s: %s",
 				channel->pathname, err_msg);
