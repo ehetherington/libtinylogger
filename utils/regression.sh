@@ -89,10 +89,14 @@ function cleanup {
 	rm -rf "$WORK_DIR"
 }
 
-# options for each example
+# ==== testing options for some examples ====
 declare -A options
-options["beehive"]="-v"
+# -q quick -v verify -z zero microsecond sleep
+options["beehive"]="-q -v -z"
+# --pass make sure it passes
 options["check-timezone"]="--pass"
+# -q quick
+options["logrotate"]="-q"
 
 # run a test
 function run_test {
