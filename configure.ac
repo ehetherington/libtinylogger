@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.69])
-AC_INIT([tinylogger], [0.6.2], [ejh.1957.eh@gmail.com])
+AC_INIT([tinylogger], [0.6.5], [ejh.1957.eh@gmail.com])
 #AC_CONFIG_MACRO_DIRS([m4])
 AC_CONFIG_HEADER([config.h])
 AC_CONFIG_SRCDIR([src])
@@ -16,23 +16,23 @@ LT_INIT([dlopen])
 AM_INIT_AUTOMAKE([-Wno-portability subdir-objects foreign])
 
 
-# Configure option: --enable-timezone[=no].
+# Configure option: --disable-timezone[=yes].
 # appears in config.h
 AC_ARG_ENABLE([timezone],
-    [AS_HELP_STRING([--enable-timezone],
-    [append timezone to JSON format timestamps (default is no)])],
-    [enable_timezone=yes], [enable_timezone=no])
+    [AS_HELP_STRING([--disable-timezone],
+    [disable appending timezone to JSON format timestamps])],
+    [enable_timezone=no], [enable_timezone=yes])
 AS_IF([test "x$enable_timezone" = xyes],
     AC_DEFINE([ENABLE_TIMEZONE], [1],
 		[Define to 1 to enable timezone in JSON timestamps])
     )
 
-# Configure option: --enable-json-header[=no].
+# Configure option: --disable-json-header[=yes].
 # appears in config.h
 AC_ARG_ENABLE([json-header],
-    [AS_HELP_STRING([--enable-json-header],
-    [include a header in json logs (default is no)])],
-    [enable_json_header=yes], [enable_json_header=no])
+    [AS_HELP_STRING([--disable-json-header],
+    [do not include a header in json logs])],
+    [enable_json_header=no], [enable_json_header=yes])
 AS_IF([test "x$enable_json_header" = xyes],
     AC_DEFINE([ENABLE_JSON_HEADER], [1],
 		[Define to 1 to enable header in JSON logs])
@@ -71,19 +71,12 @@ AM_COND_IF([HAVE_DOXYGEN],,[AC_MSG_WARN([doxygen needed to build docs])])
 AC_CHECK_HEADERS([systemd/sd-daemon.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
-#AC_CHECK_HEADER_STDBOOL
 
 # Checks for library functions.
 #AC_FUNC_ERROR_AT_LINE
 #AC_CHECK_FUNCS([bzero ftime gethostbyaddr gethostbyname inet_ntoa socket])
 
-#dll_prefix="dll_"
-#AC_SUBST([dll_prefix])
-
-#AC_SUBST([dll_prefix], ["log_"])
-#AC_SUBST([dll_storage_class], ["static "])
-
-# configure the "Doubly Linked List" sources
+# configure the "Doubly Linked List" (dll_) sources
 # examples:
 # dll_prefix: "log_" or "dll_" or "" or ...
 # dll_storage_class: "static" or ""
