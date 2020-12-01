@@ -89,6 +89,7 @@ cp "$SCRIPT_DIR"/Makefile.logger "$LOGGER_DIR"/Makefile
 # populate the example source dir
 mkdir -p "$EXAMPLE_DIR"
 cp "$TOP_SRCDIR"/demo/*.[ch] "$EXAMPLE_DIR"
+cp "$TOP_SRCDIR"/utils/*.[ch] "$EXAMPLE_DIR"
 cp "$SCRIPT_DIR"/Makefile.examples "$EXAMPLE_DIR"/Makefile
 
 # re-shuffle the common demo utils
