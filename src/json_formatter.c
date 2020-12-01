@@ -76,6 +76,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <ctype.h>
 #include <pthread.h>
 #include <fcntl.h>
 #include <sys/types.h>
@@ -93,37 +94,74 @@
  *     &apos;\\t&apos;, &apos;\\"&apos; and
  *     &apos;\\\\&apos;.
  *
- * No special treatment of non-ascii characters is performed.
- *
  * @param input the string to escape
  * @param buf a buffer to place the escaped output
- * @param len the length of that buffer.
+ * @param len the length of that buffer - termination null will be added
  */
 static char *escape_json(char const *input, char *buf, int len) {
 	char const *ptr_in;
 	char *ptr_out;
-	int n_written;
 
-	if ((input == NULL) || (buf == NULL) || (len == 0)) return NULL;
+	// len must be at least 1 for the terminating null
+	if ((input == NULL) || (buf == NULL) || (len < 1)) return NULL;
 
+	// stop when there isn't even room for an un-escaped char
 	for (ptr_in = input, ptr_out = buf;
-		*ptr_in != '\0' && (ptr_out < buf + len);
+		*ptr_in != '\0' && (ptr_out < (buf + len) - 1);
 		ptr_in++) {
 
 		char *esc = NULL;
+
 		switch (*ptr_in) {
-			case '\b': esc = "\\b"; break; 
-			case '\f': esc = "\\f"; break;
-			case '\n': esc = "\\n"; break;
-			case '\r': esc = "\\r"; break;
-			case '\t': esc = "\\t"; break;
-			case '\"': esc = "\\\""; break;
-			case '\\': esc = "\\\\"; break;
+			case 0x00: esc = "\\u0000"; break; // hmmm...
+			case 0x01: esc = "\\u0001"; break;
+			case 0x02: esc = "\\u0002"; break;
+			case 0x03: esc = "\\u0003"; break;
+			case 0x04: esc = "\\u0004"; break;
+			case 0x05: esc = "\\u0005"; break;
+			case 0x06: esc = "\\u0006"; break;
+			case 0x07: esc = "\\u0007"; break;
+			case '\b': esc = "\\b";     break; // 0x08
+			case '\t': esc = "\\t";     break; // 0x09
+			case '\n': esc = "\\n";     break; // 0x0A
+			case 0x0B: esc = "\\u000B"; break;
+			case '\f': esc = "\\f";     break; // 0x0C
+			case '\r': esc = "\\r";     break; // 0x0D
+			case 0x0E: esc = "\\u000E"; break;
+			case 0x0F: esc = "\\u000F"; break;
+
+			case 0x10: esc = "\\u0010"; break;
+			case 0x11: esc = "\\u0011"; break;
+			case 0x12: esc = "\\u0012"; break;
+			case 0x13: esc = "\\u0013"; break;
+			case 0x14: esc = "\\u0014"; break;
+			case 0x15: esc = "\\u0015"; break;
+			case 0x16: esc = "\\u0016"; break;
+			case 0x17: esc = "\\u0017"; break;
+			case 0x18: esc = "\\u0018"; break;
+			case 0x19: esc = "\\u0019"; break;
+			case 0x1A: esc = "\\u001A"; break;
+			case 0x1B: esc = "\\u001B"; break;
+			case 0x1C: esc = "\\u001C"; break;
+			case 0x1D: esc = "\\u001D"; break;
+			case 0x1E: esc = "\\u001E"; break;
+			case 0x1F: esc = "\\u001F"; break;
+
+			case '\"': esc = "\\\""; break;  // 0x22 ('"')
+			case '\\': esc = "\\\\"; break;  // 0x5C ('\")
 		}
+
 		if (esc != NULL) {
-			n_written =
-				snprintf(ptr_out, len - (ptr_out - buf), "%s", esc);
-			ptr_out += n_written;
+			// Make sure we can fit the whole escape sequence.
+			// Truncate output at the first character that doesn't fit.
+			// Leave room for terminating null.
+			size_t escape_len = strlen(esc);
+			size_t n_available = len - (ptr_out - buf) - 1;
+
+			if (escape_len > n_available) break;
+
+			memcpy(ptr_out, esc, escape_len);
+			ptr_out += escape_len;
 		} else {
 			*ptr_out++ = *ptr_in;
 		}
@@ -197,7 +235,7 @@ static inline void json_format_timestamp(struct timespec *ts,
 
 #if ENABLE_JSON_HEADER
 static inline int do_header(FILE *stream, char *notes) {
-	char notes_buf[512] = {0};
+	char notes_buf[BUFSIZ] = {0};
     char date[TIMESTAMP_LEN + TIMEZONE_LEN];
 	struct timespec ts;
 
@@ -214,12 +252,13 @@ static inline int do_header(FILE *stream, char *notes) {
 	if (notes == NULL) {
 		snprintf(notes_buf, sizeof(notes_buf), "null");
 	} else {
+		// leave room for enclosing quotes
 		escape_json(notes, notes_buf + 1, sizeof(notes_buf) - 2);
 		notes_buf[0] = '"';
 		strcat(notes_buf, "\"");
 	}
 
-	return fprintf(stream,	"  \"logHeader\" : {\n"
+	return fprintf(stream,	"  \"header\" : {\n"
 							"    \"startDate\" : \"%s\",\n"
 							"    \"hostname\" : \"%s\",\n"
 							"    \"notes\" : %s\n  },",
@@ -342,7 +381,8 @@ static int _log_fmt_json(FILE *stream, int sequence, struct timespec *ts, int le
 
 	int n_written = 0;
 
-	// TODO: escape file and function also
+	// The message must be properly escaped for the JSON output
+	// TODO: escape file also ???
 	escape_json(msg, buf, sizeof(buf));
 
 	/*

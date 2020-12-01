@@ -1,15 +1,116 @@
 # JSON formatter
-## JSON Message formatting and output
 
-There are two compile time options that may be enabled.
+Text must be encoded in UTF-8. (ASCII is a proper subset of that, and so it is
+perfectly fine).
 
-- [Olson timezones](#enabling-timezone)
-- [log header](#enabling-log-header)
+Two nice test files can be found at:
+https://www.w3.org/2001/06/utf-8-test/UTF-8-demo.html and
+UTF-8_Sampler.html from: http://kermitproject.org/utf8.html
 
-### Basic Log and Record formats
+The program utils/file-to-json.c reads a file and generates a message for each
+line of text. That output log can then be read by the companion JSON-LogReader
+project to produce an identical copy of the orignial input.
 
-The JSON output is a `log` object containing an array of records. The record
-objects are:
+NOTE: messages are limited to BUFSIZ *including* any escaping required for
+JSON.
+
+## Two different formats available
+There are two different formats available - `log_fmt_json` and
+`log_fmt_json_records`
+
+### `log_fmt_json`
+`log_fmt_json` produces a JSON log object. It contains an optional header
+followed by an array of records objects.
+
+It is most easily parsed as an entire entity.
+
+Example output produced by `log_fmt_json`:
+
+```
+{
+  "header" : {
+    "startDate" : "2020-11-28T00:26:41.205878884-05:00[America/New_York]",
+    "hostname" : "sambashare",
+    "notes" : "This log was produced using log_fmt_json"
+  }, "records" : [  {
+    "isoDateTime" : "2020-11-28T00:26:41.206316449-05:00[America/New_York]",
+    "timespec" : {
+      "sec" : 1606541201,
+      "nsec" : 206316449
+    },
+    "sequence" : 1,
+    "logger" : "tinylogger",
+    "level" : "INFO",
+    "file" : "json.c",
+    "function" : "main",
+    "line" : 111,
+    "threadId" : 161060,
+    "threadName" : "json",
+    "message" : "This message is not very informative."
+  },  {
+    "isoDateTime" : "2020-11-28T00:26:41.206332617-05:00[America/New_York]",
+    "timespec" : {
+      "sec" : 1606541201,
+      "nsec" : 206332617
+    },
+    "sequence" : 2,
+    "logger" : "tinylogger",
+    "level" : "INFO",
+    "file" : "json.c",
+    "function" : "main",
+    "line" : 112,
+    "threadId" : 161060,
+    "threadName" : "json",
+    "message" : "This message is not very informative either."
+  } ]
+}
+```
+
+### `log_fmt_json_records`
+`log_fmt_json_records` produces a series of JSON record objects.
+
+Since each record is a complete JSON object, this format makes stream based use
+easier. It is also easy to make a reader to monitor a growing log file as each
+record is immediately available for processing as it is produced.
+
+Example output produced by `log_fmt_json_records`:
+
+```
+{
+    "isoDateTime" : "2020-11-28T21:48:43.761094579-05:00[America/New_York]",
+    "timespec" : {
+      "sec" : 1606618123,
+      "nsec" : 761094579
+    },
+    "sequence" : 1,
+    "logger" : "tinylogger",
+    "level" : "INFO",
+    "file" : "json.c",
+    "function" : "main",
+    "line" : 111,
+    "threadId" : 188373,
+    "threadName" : "json",
+    "message" : "sixteenth_note (♬), g_clef (𝄞)"
+}
+{
+    "isoDateTime" : "2020-11-28T21:48:43.761337425-05:00[America/New_York]",
+    "timespec" : {
+      "sec" : 1606618123,
+      "nsec" : 761337425
+    },
+    "sequence" : 2,
+    "logger" : "tinylogger",
+    "level" : "INFO",
+    "file" : "json.c",
+    "function" : "main",
+    "line" : 112,
+    "threadId" : 188373,
+    "threadName" : "json",
+    "message" : "\" quotes and \\ backslashes are escaped"
+}
+```
+
+## Fields in the Record objects
 
  - `isoDateTime` The message timestamp - it includes UTC offset, and may
                  optionally include Olson timezone. See [enabling timezone]
@@ -44,52 +145,12 @@ macros.
 `message` is the actual user message.
 
 
-Example output with the `log` object containing an array of `record` objects:
-```
-{
-  "records" : [  {
-    "isoDateTime" : "2020-08-11T17:40:31.109019932-04:00",
-    "timespec" : {
-      "sec" : 1597182031,
-      "nsec" : 109019932
-    },
-    "sequence" : 1,
-    "logger" : "tinylogger",
-    "level" : "INFO",
-    "file" : "json.c",
-    "function" : "main",
-    "line" : 35,
-    "threadId" : 246970,
-    "threadName" : "json",
-    "message" : "\b backspaces are escaped for JSON output"
-  },  {
-    "isoDateTime" : "2020-08-11T17:40:31.109213215-04:00",
-    "timespec" : {
-      "sec" : 1597182031,
-      "nsec" : 109213215
-    },
-    "sequence" : 2,
-    "logger" : "tinylogger",
-    "level" : "INFO",
-    "file" : "json.c",
-    "function" : "main",
-    "line" : 36,
-    "threadId" : 246970,
-    "threadName" : "json",
-    "message" : "\r carriage returns are escaped for JSON output"
-  } ]
-}
-```
+## There are two compile time options that may be disabled.
+The header and Olson timezones are now _enabled_ by default. They may be disabled
+at compile time.
 
-Note: The above example shows escaping for backspaces and carriage returns. The
-full list of escaped characters is:
-    - backspaces
-	- form feeds
-	- line feed
-	- carriage returns
-	- tabs
-	- apostrophies
-	- backslashes
+- [Olson timezones](#enabling-timezone)
+- [log header](#disabling-log-header)
 
 ## Enabling Olson Timezone in the timestamp <a name="enabling-timezone"/>
 This feature appends the Olson timezone, as in "Europe/London" or
@@ -101,7 +162,7 @@ region that the UTC offset doesn't provide.
 Finding the timezone varies depending on Linux distro. And each particular
 system may have its configuration modified. And the user can override the
 system default by setting the TZ variable in the environment. For these reasons,
-supporting timezone must be enabled at compile time.
+supporting timezone may be disabled at compile time.
 
 If this feature is enabled, the timezone will be appended only if a matching
 zoneinfo file in the zoneinfo database directory exists following the rules
@@ -130,16 +191,16 @@ can be enabled in the library. Make sure it works on all configurations of your
 targets.
 
 ### Quick-start configuration
-Edit the quick-start/config.h file to enable. There are instructions in that
-file.
+Edit the quick-start/config.h file to enable/disable timezones. There are
+instructions in that file.
 
 ### autoconf configuration
-There is an option to the configure script to enable use of timezones in JSON
-output. In the top directory:
+There is an option to the configure script to enable/disable use of timezones
+in JSON output. In the top directory:
 
 ```
 $ autoreconf -i
-$ ./configure --enable-timezone
+$ ./configure --disable-timezone
 $ make
 ```
 ### JSON isoDateTime field with and without Olson timezone
@@ -189,9 +250,9 @@ An example of a complete log file with Olson timezones enabled:
   } ]
 }
 ```
-## Enabling header object <a name="enabling-log-header"/>
+## Disabling header object <a name="disabling-log-header"/>
 
-A header for the log file can be enabled at compile time.
+The header for the log file can be disabled at compile time.
 
 The header is a `logHeader` object that consists of:
 
@@ -245,16 +306,16 @@ A sample log with both the header and Olson timezone options enabled:
 
 ```
 
-To configure:
+To disable header:
 ```
 $ autoreconf -i
-$ ./configure --enable-json-header
+$ ./configure --disable-json-header
 $ make
 ```
-For both options:
+To disable both options:
 ```
 $ autoreconf -i
-$ ./configure --enable-timezone --enable-json-header
+$ ./configure --disable-timezone --disable-json-header
 $ make
 ```
 
