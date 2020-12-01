@@ -26,11 +26,12 @@ else
 	cp logger/libtinylogger.a $ARCHIVE
 fi
 
-
-# add known external globals to this list
+# add globals from external libraries to this list
 EXTERN_SYMS=()
+EXTERN_SYMS+=("calloc")
 EXTERN_SYMS+=("clock_gettime")
 EXTERN_SYMS+=("__ctype_b_loc")
+EXTERN_SYMS+=("dirname")
 EXTERN_SYMS+=("__errno_location")
 EXTERN_SYMS+=("exit")
 EXTERN_SYMS+=("fclose")
@@ -41,6 +42,7 @@ EXTERN_SYMS+=("fread")
 EXTERN_SYMS+=("free")
 EXTERN_SYMS+=("getenv")
 EXTERN_SYMS+=("getpid")
+EXTERN_SYMS+=("index")
 EXTERN_SYMS+=("__isoc99_fscanf")
 EXTERN_SYMS+=("__libc_current_sigrtmax")
 EXTERN_SYMS+=("__lxstat")
@@ -48,6 +50,7 @@ EXTERN_SYMS+=("localtime_r")
 EXTERN_SYMS+=("malloc")
 EXTERN_SYMS+=("memcpy")
 EXTERN_SYMS+=("memset")
+EXTERN_SYMS+=("open")
 EXTERN_SYMS+=("perror")
 EXTERN_SYMS+=("pthread_attr_destroy")
 EXTERN_SYMS+=("pthread_attr_init")
@@ -61,6 +64,8 @@ EXTERN_SYMS+=("pthread_mutex_unlock")
 EXTERN_SYMS+=("pthread_self")
 EXTERN_SYMS+=("pthread_setname_np")
 EXTERN_SYMS+=("pthread_sigmask")
+EXTERN_SYMS+=("puts")		# not on gcc (Raspbian 8.3.0-6+rpi1) 8.3.0
+EXTERN_SYMS+=("read")
 EXTERN_SYMS+=("readlink")
 EXTERN_SYMS+=("rindex")
 EXTERN_SYMS+=("setvbuf")
@@ -70,15 +75,19 @@ EXTERN_SYMS+=("sigwaitinfo")
 EXTERN_SYMS+=("snprintf")
 EXTERN_SYMS+=("stderr")
 EXTERN_SYMS+=("strcasecmp")
+EXTERN_SYMS+=("strcmp")		# not on gcc (GCC) 8.3.1 20191121 (Red Hat 8.3.1-5)
 EXTERN_SYMS+=("strcpy")
 EXTERN_SYMS+=("strdup")
 EXTERN_SYMS+=("strerror_r")
 EXTERN_SYMS+=("strlen")
 EXTERN_SYMS+=("strncat")
+EXTERN_SYMS+=("strncmp")	# not on gcc (GCC) 8.3.1 20191121 (Red Hat 8.3.1-5)
 EXTERN_SYMS+=("strncpy")
 EXTERN_SYMS+=("strstr")
+EXTERN_SYMS+=("strtok")
 EXTERN_SYMS+=("syscall")
 EXTERN_SYMS+=("vsnprintf")
+EXTERN_SYMS+=("__xstat")
 
 # the number of external globals
 len=${#EXTERN_SYMS[@]}
@@ -89,7 +98,7 @@ do
 	EXTERN_PATTERN=$EXTERN_PATTERN"|"${EXTERN_SYMS[i]}
 done
 
-GLOBALS=$(readelf -s $ARCHIVE | grep GLOBAL | cut -c 60-)
+GLOBALS=$(readelf -s $ARCHIVE | grep GLOBAL | tr -s " " "\\t" | cut -f 9-)
 GLOBALS=$(echo "$GLOBALS" | sort | uniq)
 echo "$GLOBALS" | grep -E -v "$EXTERN_PATTERN"
 
