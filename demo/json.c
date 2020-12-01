@@ -5,8 +5,8 @@
 #include "tinylogger.h"
 #include "demo-utils.h"
 
-#define LOG_FILE "log-json.json"	/**< the output file */
-#define N_REPS 1					/**< increase for a long file */
+#define LOG_FILE "log.json"	/**< the output file */
+#define N_REPS 1			/**< increase for a long file */
 
 /*
  * a little russian taken from:

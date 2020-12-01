@@ -5,7 +5,7 @@
 #include "tinylogger.h"
 #include "demo-utils.h"
 
-#define LOG_FILE "log-xml.xml"
+#define LOG_FILE "log.xml"
 #define N_MSGS 2
 
 /**
