@@ -145,6 +145,13 @@ int main(int argc, char **argv) {
 	}
 
 	/*
+	 * start with a clean slate
+	 */
+	remove_or_exit(filename);
+	snprintf(buf, sizeof(buf), "%s.rotated", filename);
+	remove_or_exit(buf);
+
+	/*
 	 * get the pid of this process - needed for the kill command
 	 */
 	my_pid = getpid();

@@ -21,6 +21,7 @@
 	} while (0)
 
 void check_append(char *filename);
+void remove_or_exit(char *filename);
 char *get_proc_comm(void);
 void timespec_diff(struct timespec *a, struct timespec *b, struct timespec *result);
 long long get_time_nanos(struct timespec *ts);

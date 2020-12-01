@@ -57,7 +57,7 @@ void check_append(char *filename) {
 			case 'q': printf("quitting\n"); exit(EXIT_SUCCESS);
 			case 'o': {
 				printf("deleting current %s, starting a new one\n", filename);
-				int status = remove(filename);
+				status = remove(filename);
 				if (status != 0) {
 					printf("could not remove %s\n", filename);
 					exit(EXIT_FAILURE);
@@ -66,6 +66,28 @@ void check_append(char *filename) {
 			}
 		}
 	}
+}
+
+/**
+ * @fn void remove_or_exit(char *)
+ * @brief Remove a file, exit on failure.
+ *
+ * For some demos, it is very desireable to start with a clean slate.
+ *
+ * @param filename the filename to remove, it it exists
+ */
+void remove_or_exit(char *filename) {
+	struct stat statbuf;
+	int status = stat(filename, &statbuf);
+
+	if (status != 0) return;
+
+	status = remove(filename);
+	if (status != 0) {
+		printf("could not remove %s\n", filename);
+		exit(EXIT_FAILURE);
+	}
+	return;
 }
 
 /**
