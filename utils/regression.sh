@@ -139,6 +139,9 @@ mkdir $TMP_DIR
 # exit on first error
 for PROG in ${PROGS_LIST[@]}; do
 	PROG_BASENAME="$( basename "$PROG")"
+	if [ $PROG_BASENAME = "file-to-json" ]; then
+		continue
+	fi
 	OPTIONS="${options[$PROG_BASENAME]}"
 	echo "==== testing ====> $PROG"
 
