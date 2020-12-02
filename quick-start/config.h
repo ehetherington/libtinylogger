@@ -51,6 +51,22 @@
 
 /*
  * JSON output specific.
+ * JSON log files may have a small header before the list of records.
+ *
+ * The header field name is "logHeader", and has three fields:
+ * 1) startDate - a timestamp for when the log channel was configured. If
+ *    ENABLE_TIMEZONE is set, the Olson timezone will be appended as in all
+ *    other timestamps.
+ * 2) hostname - read from /proc/sys/kernel/hostname
+ * 3) comment - currently no api is available to supply a comment. It will be
+ *    empty.
+ */
+/* Define to 1 to enable header in JSON logs */
+#define ENABLE_JSON_HEADER 1
+
+
+/*
+ * JSON output specific.
  * Locating the timezone on different Linux distros varies. This software has
  * been tested on RHEL8 and Raspbian/buster (Debian based). A program in the
  * demo (example) directory called check-timezone will display the timezone
@@ -64,14 +80,13 @@
 /*
  * JSON output specific.
  * If ENABLE_TIMEZONE has been set, getting the timezone verifies it against
- * the Olson timezone database. If you have it in a non-standard location, that
+ * the Olson timezone database. If yours is not in /usr/share/zoneinfo, that
  * must be set with the following:
  */
 /* For example:
  * #define ZONEINFO_DIR "/my/olson/database"
  */
-/* define to override default of /usr/share/zoneinf0 */
-/* #undef ZONEINFO_DIR */
+//#define ZONEINFO_DIR "/usr/share/zoneinfo"
 
 /*
  * TIMEZONE_TEST must be defined for examples/json-timezones.c to work
