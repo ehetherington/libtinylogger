@@ -10,36 +10,42 @@
 # And, if you have been using the quick-start configuration, remember to run
 # autoreconf -i first.
 
+# The options are enabled by default - they must be disabled.
+
 # Note: this runs 4 configuration/build cycles - don't be alarmed!
 
 CLEAN_FILES=(
-	tinylogger.json
-	tinylogger-none.json
-	tinylogger-timezone.json
-	tinylogger-json-header.json
-	tinylogger-timezone-json-header.json)
+	log.json
+	example-none.json
+	example-timezone.json
+	example-json-header.json
+	example-timezone-json-header.json)
 
 for F in "${CLEAN_FILES[@]}"; do
 	rm -f "$F"
 done
 
+# all enabled
 ./configure
 make
 demo/json
-mv tinylogger.json tinylogger-none.json
+mv log.json example-timezone-json-header.json
 
-./configure --enable-timezone
+# json-header enabled
+./configure --disable-timezone
 make
 demo/json
-mv tinylogger.json tinylogger-timezone.json
+mv log.json example-json-header.json
 
-./configure --enable-json-header
+# Olson timezone enabled
+./configure --disable-json-header
 make
 demo/json
-mv tinylogger.json tinylogger-json-header.json
+mv log.json example-timezone.json
 
-./configure --enable-timezone --enable-json-header
+# both disabled
+./configure --disable-timezone --disable-json-header
 make
 demo/json
-mv tinylogger.json tinylogger-timezone-json-header.json
+mv log.json example-none.json
 
