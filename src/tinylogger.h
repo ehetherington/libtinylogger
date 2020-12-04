@@ -71,8 +71,8 @@ typedef enum log_level {
  * Public for use by custom formatter.
  */
 struct log_label {
-    char *english;  /**< label used for most formats */
-    char *systemd;  /**< label used for systemd format */
+	char *english;  /**< label used for most formats */
+	char *systemd;  /**< label used for systemd format */
 	int	java_level;	/**< java equivalent level */
 };
 extern struct log_label log_labels[LL_N_VALUES];
@@ -81,7 +81,7 @@ extern struct log_label log_labels[LL_N_VALUES];
  * Formatters must have this signature.
  */
 typedef int (*log_formatter_t)(FILE *, int, struct timespec *, int,
-    const char *, const char *, int, char *);
+	const char *, const char *, int, char *);
 
 /**
  * For use of log_format_timestamp()
@@ -93,8 +93,8 @@ typedef enum {
 	SP_NANO,				/**< .nnnnnnnnn              */
 	FMT_ISO = 16,			/**< 'T' instead of ' '      */
 	FMT_UTC_OFFSET = 32,	/**< add UTC offset "+00:00" */
-	LOG_FMT_DELTA = 64,	    /**< print an elapsed time   */
-	LOG_FMT_HMS = 128	    /**< elapsed time in H:M:S   */
+	LOG_FMT_DELTA = 64,		/**< print an elapsed time   */
+	LOG_FMT_HMS = 128		/**< elapsed time in H:M:S   */
 } LOG_TS_FORMAT;
 
 struct _logChannel;

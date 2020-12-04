@@ -236,7 +236,7 @@ static inline void json_format_timestamp(struct timespec *ts,
 #if ENABLE_JSON_HEADER
 static inline int do_header(FILE *stream, char *notes) {
 	char notes_buf[BUFSIZ] = {0};
-    char date[TIMESTAMP_LEN + TIMEZONE_LEN];
+	char date[TIMESTAMP_LEN + TIMEZONE_LEN];
 	struct timespec ts;
 
 	// get an timestamp
@@ -367,8 +367,8 @@ static int do_json_end(FILE *stream, bool records) {
  * @return the number of characters written.
  */
 static int _log_fmt_json(FILE *stream, int sequence, struct timespec *ts, int level,
-    const char *file, const char *function, int line, char *msg, bool records) {
-    char date[TIMESTAMP_LEN + TIMEZONE_LEN];
+	const char *file, const char *function, int line, char *msg, bool records) {
+	char date[TIMESTAMP_LEN + TIMEZONE_LEN];
 	char buf[BUFSIZ] = {0};
 
 	pthread_t thread = pthread_self();
@@ -434,8 +434,8 @@ static int _log_fmt_json(FILE *stream, int sequence, struct timespec *ts, int le
  * @return the number of characters written.
  */
 int log_fmt_json(FILE *stream,
-        int sequence, struct timespec *ts, int level,
-        const char *file, const char *function, int line, char *msg) {
+		int sequence, struct timespec *ts, int level,
+		const char *file, const char *function, int line, char *msg) {
 	return _log_fmt_json(stream, sequence, ts, level,
 		file, function, line, msg, false);
 }
@@ -460,8 +460,8 @@ int log_fmt_json(FILE *stream,
  * @return the number of characters written.
  */
 int log_fmt_json_records(FILE *stream,
-        int sequence, struct timespec *ts, int level,
-        const char *file, const char *function, int line, char *msg) {
+		int sequence, struct timespec *ts, int level,
+		const char *file, const char *function, int line, char *msg) {
 	return _log_fmt_json(stream, sequence, ts, level,
 		file, function, line, msg, true);
 }

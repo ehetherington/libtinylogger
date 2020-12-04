@@ -127,11 +127,11 @@ int main(int argc, char **argv) {
 	/*
 	 * control characters 0x01 - 0x1f (skip 0)
 	 */
-    char control[32] = {0};
-    for (int n = 0; n <31; n++) {
-        control[n] = n + 1;
-    }
-    log_info("control characters: %s", control);
+	char control[32] = {0};
+	for (int n = 0; n <31; n++) {
+		control[n] = n + 1;
+	}
+	log_info("control characters: %s", control);
 
 
 	log_done();

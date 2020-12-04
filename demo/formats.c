@@ -55,7 +55,7 @@ int log_fmt_custom_1(FILE *stream, int sequence, struct timespec *ts, int level,
 	// thread name
 	rc = pthread_getname_np(thread, thread_name, sizeof(thread_name));
 	if (rc != 0) {
-	    snprintf(thread_name, sizeof(thread_name), "unknown");
+		snprintf(thread_name, sizeof(thread_name), "unknown");
 	}
 
 	return fprintf(stream, "%s %-7s %ld:%s %s\n",

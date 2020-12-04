@@ -178,9 +178,9 @@ static inline bool is_open_channel(LOG_CHANNEL *channel) {
  * @return the level constrained to the valid range.
  */
 static LOG_LEVEL log_constrain_level(LOG_LEVEL level) {
-    if (level >= LL_N_VALUES) return LL_N_VALUES - 1;
-    if (level < 0) return 0;
-    return level;
+	if (level >= LL_N_VALUES) return LL_N_VALUES - 1;
+	if (level < 0) return 0;
+	return level;
 }
 
 /**
@@ -222,10 +222,10 @@ static inline void timespec_diff(struct timespec *a, struct timespec *b,
 static void log_report_error(char const * const format, ...)
 	__attribute__ ((format (printf, 1, 2)));
 static void log_report_error(char const * const format, ...) {
-    va_list args;
-    va_start(args, format);
-    vfprintf(stderr, format, args);
-    va_end(args);
+	va_list args;
+	va_start(args, format);
+	vfprintf(stderr, format, args);
+	va_end(args);
 }
 
 /**
@@ -263,7 +263,7 @@ static bool _reopen_channel(LOG_CHANNEL *channel) {
 	char *err_msg;
 
 	// verify that it is actually an open channel
-    if (!is_open_channel(channel)) return false;
+	if (!is_open_channel(channel)) return false;
 	
 	// for Json and XML
 	log_do_tail(channel);
@@ -432,12 +432,12 @@ void log_format_delta(struct timespec *ts, LOG_TS_FORMAT precision, char *buf, i
 	struct timespec delta;
 	char seconds_buf[26];
 
-    if ((buf == NULL) || (len < TIMESTAMP_LEN)) {
-        fprintf(stderr,
-            "log_format_delta: internal error - provide %d char buf\n",
-                TIMESTAMP_LEN);
-        return;
-    }
+	if ((buf == NULL) || (len < TIMESTAMP_LEN)) {
+		fprintf(stderr,
+			"log_format_delta: internal error - provide %d char buf\n",
+				TIMESTAMP_LEN);
+		return;
+	}
 
 	timespec_diff(ts, &log_config.ts, &delta);
 
@@ -821,9 +821,9 @@ int log_change_params(LOG_CHANNEL  *channel, LOG_LEVEL level, log_formatter_t fo
 	if (formatter == NULL) goto unlock;
 
 	// verify that it is actually a channel
-    if (!is_channel(channel)) {
-        goto unlock;
-    }
+	if (!is_channel(channel)) {
+		goto unlock;
+	}
 
 	// change the params
 	channel->level = log_constrain_level(level);
@@ -935,10 +935,10 @@ int log_close_channel(LOG_CHANNEL *channel) {
 	pthread_mutex_lock(&log_lock);
 
 	// verify that it is actually a channel
-    if (!is_channel(channel)) {
+	if (!is_channel(channel)) {
 		status = -1;
-        goto unlock;
-    }
+		goto unlock;
+	}
 
 	// see if it was actually open
 	if (channel->stream == NULL) {

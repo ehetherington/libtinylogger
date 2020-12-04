@@ -193,9 +193,9 @@ int main(int argc, char **argv) {
 	 * If we are going to use JSON, set a header "note". The JSON format
 	 * is the only one that uses it.
 	 *
-     * log_set_json_notes() only has an effect if the library was compiled with
-     * ENABLE_JSON_HEADER. ("notes" is a field in the header)
-     */
+	 * log_set_json_notes() only has an effect if the library was compiled with
+	 * ENABLE_JSON_HEADER. ("notes" is a field in the header)
+	 */
 
 	if (formatter == log_fmt_json) {
 		log_set_json_notes(

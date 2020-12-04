@@ -220,13 +220,13 @@ static char *log_eval_symlink(char const * const pathname) {
 	int link_len;
 	char link_contents[PATH_MAX] = {0};
 
-    // Make sure the path actually is a symbolic link.
-    // We can't get the Olson timezone from an actual zoneinfo file or hard
-    // link. We need a symbolic link that contains the timezone to extract the
-    // timezone name.
+	// Make sure the path actually is a symbolic link.
+	// We can't get the Olson timezone from an actual zoneinfo file or hard
+	// link. We need a symbolic link that contains the timezone to extract the
+	// timezone name.
 	// (the lstat(2) is not necessary, as the following readlink(2) will pick up
 	// a path that doesn't reference a symlink by failing also).
-    if ((lstat(pathname, &sb) != 0) || ! S_ISLNK(sb.st_mode)) return NULL;
+	if ((lstat(pathname, &sb) != 0) || ! S_ISLNK(sb.st_mode)) return NULL;
 
 	// read the symbolic link
 	link_len = readlink(pathname, link_contents, sizeof(link_contents) - 1);

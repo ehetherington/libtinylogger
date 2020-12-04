@@ -220,8 +220,8 @@ int log_do_xml_tail(FILE *stream) {
  * @return the number of characters written.
  */
 int log_fmt_xml(FILE *stream, int sequence, struct timespec *ts, int level,
-    const char *file, const char *function, int line, char *msg) {
-    char date[TIMESTAMP_LEN];
+	const char *file, const char *function, int line, char *msg) {
+	char date[TIMESTAMP_LEN];
 	char buf[BUFSIZ] = {0};
 	long int time_millis;
 	long int time_nanos;
@@ -236,7 +236,7 @@ int log_fmt_xml(FILE *stream, int sequence, struct timespec *ts, int level,
 	// TODO: escape file and function also
 	escape_xml(msg, buf, sizeof(buf));
 
-    log_format_timestamp(ts, FMT_UTC_OFFSET | FMT_ISO | SP_MILLI,
+	log_format_timestamp(ts, FMT_UTC_OFFSET | FMT_ISO | SP_MILLI,
 		date, sizeof(date));
 	n_written += do_xml_start(stream);
 	n_written += do_xml_text(stream, "date", date);
@@ -271,6 +271,6 @@ int log_fmt_xml(FILE *stream, int sequence, struct timespec *ts, int level,
  * @return the number of characters written.
  */
 int log_fmt_xml_records(FILE *stream, int sequence, struct timespec *ts, int level,
-    const char *file, const char *function, int line, char *msg) {
+	const char *file, const char *function, int line, char *msg) {
 	return log_fmt_xml(stream, sequence, ts, level, file, function, line, msg);
 }

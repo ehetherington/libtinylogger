@@ -59,19 +59,19 @@
  * java ones.
  */
 struct log_label log_labels[]  = {
-    {"EMERG",   SD_EMERG,  1300},
-    {"ALERT",   SD_ALERT,  1200},
-    {"CRIT",    SD_CRIT,   1100},
-    {"SEVERE",  SD_ERR,    1000}, // masquerade as err for systemd (J)
-    {"ERR",     SD_ERR,     950},
-    {"WARNING", SD_WARNING, 900}, // (J)
-    {"NOTICE",  SD_NOTICE,  850},
-    {"INFO",    SD_INFO,    800}, // (J)
-    {"CONFIG",  SD_INFO,    700}, // masquerade as info for systemd (J)
-    {"DEBUG",   SD_DEBUG,   600},
-    {"FINE",    SD_DEBUG,   500}, // masquerade as debug for systemd (J)
-    {"FINER",   SD_DEBUG,   400}, // masquerade as debug for systemd (J)
-    {"FINEST",  SD_DEBUG,   300}, // masquerade as debug for systemd (J)
+	{"EMERG",   SD_EMERG,  1300},
+	{"ALERT",   SD_ALERT,  1200},
+	{"CRIT",	SD_CRIT,   1100},
+	{"SEVERE",  SD_ERR,	   1000}, // masquerade as err for systemd (J)
+	{"ERR",	 	SD_ERR,	 	950},
+	{"WARNING", SD_WARNING, 900}, // (J)
+	{"NOTICE",  SD_NOTICE,  850},
+	{"INFO",	SD_INFO,	800}, // (J)
+	{"CONFIG",  SD_INFO,	700}, // masquerade as info for systemd (J)
+	{"DEBUG",   SD_DEBUG,   600},
+	{"FINE",	SD_DEBUG,   500}, // masquerade as debug for systemd (J)
+	{"FINER",   SD_DEBUG,   400}, // masquerade as debug for systemd (J)
+	{"FINEST",  SD_DEBUG,   300}, // masquerade as debug for systemd (J)
 };
 
 /**
@@ -86,14 +86,14 @@ struct log_label log_labels[]  = {
  * corresponding LOG_LEVEL.
  */
 LOG_LEVEL log_get_level(const char *label) {
-    // alias for the least important level
-    if (strcasecmp(label, "ALL") == 0) return LL_N_VALUES - 1;
-    if (strcasecmp(label, "OFF") == 0) return LL_OFF;
+	// alias for the least important level
+	if (strcasecmp(label, "ALL") == 0) return LL_N_VALUES - 1;
+	if (strcasecmp(label, "OFF") == 0) return LL_OFF;
 
-    for (int n = 0; n < LL_N_VALUES; n++) {
-        if (strcasecmp(label, log_labels[n].english) == 0) return n;
-    }
-    return LL_INVALID;
+	for (int n = 0; n < LL_N_VALUES; n++) {
+		if (strcasecmp(label, log_labels[n].english) == 0) return n;
+	}
+	return LL_INVALID;
 }
 
 /**
@@ -111,11 +111,11 @@ static char *fmt_sec  = "%+03ld:%02ld:%02ld";
 	long hours, minutes, seconds;
 	long off_remainder;
 
-    hours = tm->tm_gmtoff / (60 *60);
-    off_remainder = tm->tm_gmtoff % (60 * 60);
-    minutes = off_remainder / 60;
-    off_remainder = off_remainder % 60;
-    seconds = off_remainder;
+	hours = tm->tm_gmtoff / (60 *60);
+	off_remainder = tm->tm_gmtoff % (60 * 60);
+	minutes = off_remainder / 60;
+	off_remainder = off_remainder % 60;
+	seconds = off_remainder;
 
 	if (seconds == 0) {
 		snprintf(buf, len, fmt_min, hours, minutes);
@@ -495,12 +495,12 @@ int log_fmt_debug_tall(FILE *stream, int sequence, struct timespec *ts, int leve
  *```
  */
 int log_fmt_elapsed_time(FILE *stream, int sequence, struct timespec *ts, int level,
-    const char *file, const char *function, int line, char *msg) {
-    char date[TIMESTAMP_LEN];
-    log_format_timestamp(ts, LOG_FMT_DELTA, date, sizeof(date));
-    return fprintf(stream, "%s %-7s %s:%s:%d %s\n",
-        date, log_labels[level].english,
-        file, function, line, msg);
+	const char *file, const char *function, int line, char *msg) {
+	char date[TIMESTAMP_LEN];
+	log_format_timestamp(ts, LOG_FMT_DELTA, date, sizeof(date));
+	return fprintf(stream, "%s %-7s %s:%s:%d %s\n",
+		date, log_labels[level].english,
+		file, function, line, msg);
 }
 
 #pragma GCC diagnostic pop
