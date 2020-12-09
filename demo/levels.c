@@ -1,4 +1,3 @@
-
 #include <stdio.h>
 #include <stdarg.h>
 #include <stdlib.h>
@@ -12,6 +11,7 @@
 #include <signal.h>
 
 #include <tinylogger.h>
+#include "demo-utils.h"
 
 #define LOG_FILENAME "testLogger.log"
 
@@ -20,21 +20,45 @@
  * @brief log messages of all levels
  */
 static void log_messages() {
-	log_emerg("emerg %d", 0);
-	log_alert("alert %d", 1);
-	log_crit("crit %d", 2);
-	log_err("err %d", 3);
-	log_warning("warning %d", 4);
-	log_notice("notice %d", 5);
-	log_info("info %d", 6);
-	log_debug("debug %d", 7);
-	log_fine("fine %d", 8);
-	log_finer("finer %d", 8);
-	log_finest("finest %d", 8);
+	log_emerg("emerg %d",		log_get_level("emerg"));
+	log_alert("alert %d",		log_get_level("alert"));
+	log_crit("crit %d",			log_get_level("crit"));
+	log_severe("severe %d",		log_get_level("severe"));
+	log_err("err %d",			log_get_level("err"));
+	log_warning("warning %d",	log_get_level("warning"));
+	log_notice("notice %d",		log_get_level("notice"));
+	log_info("info %d",			log_get_level("info"));
+	log_config("config %d",		log_get_level("config"));
+	log_debug("debug %d",		log_get_level("debug"));
+	log_fine("fine %d",			log_get_level("fine"));
+	log_finer("finer %d",		log_get_level("finer"));
+	log_finest("finest %d",		log_get_level("finest"));
 }
 
+/*
+ * Test that get_log_level() properly looks up the level labels.
+ * The lookup is case insensitive.
+ */
+static char *test[] = {
+	"ALL", "OFF",	// turn all messages ON/OFF
+	"reject-me",	// unexpected string - returns LL_INVALID = -2
+	"emerg",
+	"alert",
+	"crit",
+	"severe",
+	"err",
+	"WARNing",
+	"notice",
+	"INFO",
+	"coNfIg",
+	"debug",
+	"fine",
+	"finer",
+	"finest"
+};
+
 /**
- * @fn int main(void)
+ * @fn int main(int argc, char *argv[])
  *
  * @various aspects of log levels
  *
@@ -50,34 +74,36 @@ static void log_messages() {
  * threshold from LL_INFO.
  *
  */
-int main(void) {
+int main(int argc, char *argv[]) {
+	bool json_examples = false;
+
+	/*
+	 * produce json examples if requested
+	 */
+	if (argc == 2) {
+		int status = strcmp("--json-examples", argv[1]);
+		if (status == 0) {
+			json_examples = true;
+		}
+	}
 
 	/*
 	 * Test that get_log_level() properly looks up the level labels.
 	 * The lookup is case insensitive.
 	 */
-	char *test[] = {
-		"ALL", "OFF",	// turn all messages ON/OFF
-		"junk",			// unexpected string - returns LL_INVALID = -2
-		"emerg",
-		"alert",
-		"crit",
-		"severe",
-		"err",
-		"INFO",
-		"WARNing",
-		"notice",
-		"coNfIg",
-		"debug",
-		"fine",
-		"finer",
-		"finest"
-	};
 	printf("==== checking log_get_level() (using printf())...\n");
 	for (size_t n = 0; n < sizeof(test) / sizeof(test[0]); n++) {
- 		printf("%s = %d\n", test[n], log_get_level(test[n]));
+		int level = log_get_level(test[n]);
+ 		printf("%s = %d\n", test[n], level);
 	}
 	printf("==== checking log_get_level() (using printf()) done\n\n");
+
+	printf("==== showing systemd mapping...\n");
+	for (size_t n = LL_EMERG; n <= LL_FINEST; n++) {
+		printf("%2zu: %7s -> %s\n",
+			n, log_labels[n].english, log_labels[n].systemd);
+	}
+	printf("==== showing systemd mapping done\n\n");
 
 	/*
 	 * The default logging config BEFORE ANY CONFIGURATION is:
@@ -103,6 +129,26 @@ int main(void) {
 
 	log_done();
 
+	if (!json_examples) exit(EXIT_SUCCESS);
+
+	/*
+	 * create a test file with a json log
+	 */
+	LOG_CHANNEL *ch;
+	remove_or_exit("all-levels-log.json");		// start from scratch
+	ch = log_open_channel_f("all-levels-log.json",
+		LL_ALL, log_fmt_json, false);
+	log_messages();
+	log_close_channel(ch);
+
+	/*
+	 * create a test file with a series of json records
+	 */
+	remove_or_exit("all-levels-records.json");	// start from scratch
+	ch = log_open_channel_f("all-levels-records.json",
+		LL_ALL, log_fmt_json_records, false);
+	log_messages();
+	log_close_channel(ch);
+
 	exit(EXIT_SUCCESS);
 }
-

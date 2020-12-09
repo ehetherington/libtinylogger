@@ -65,7 +65,7 @@ json_SOURCES = json.c
 json_LDADD = $(COMMON_LIBS)
 
 levels_SOURCES = levels.c
-levels_LDADD = ../src/libtinylogger.la
+levels_LDADD = $(COMMON_LIBS)
 
 xml_levels_SOURCES = xml-levels.c
 xml_levels_LDADD = ../src/libtinylogger.la
